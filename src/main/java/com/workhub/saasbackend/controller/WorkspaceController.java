@@ -4,7 +4,6 @@ import com.workhub.saasbackend.dto.request.CreateWorkspaceRequest;
 import com.workhub.saasbackend.dto.response.WorkspaceResponse;
 import com.workhub.saasbackend.service.WorkspaceService;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -19,10 +18,13 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/workspaces")
-@RequiredArgsConstructor
 public class WorkspaceController {
 
     private final WorkspaceService workspaceService;
+
+    public WorkspaceController(WorkspaceService workspaceService) {
+        this.workspaceService = workspaceService;
+    }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)

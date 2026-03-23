@@ -7,7 +7,6 @@ import com.workhub.saasbackend.exception.ResourceNotFoundException;
 import com.workhub.saasbackend.repository.WorkspaceRepository;
 import com.workhub.saasbackend.security.TenantContext;
 import com.workhub.saasbackend.service.WorkspaceService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,10 +14,13 @@ import java.util.List;
 import java.util.UUID;
 
 @Service
-@RequiredArgsConstructor
 public class WorkspaceServiceImpl implements WorkspaceService {
 
     private final WorkspaceRepository workspaceRepository;
+
+    public WorkspaceServiceImpl(WorkspaceRepository workspaceRepository) {
+        this.workspaceRepository = workspaceRepository;
+    }
 
     @Override
     @Transactional
@@ -57,13 +59,13 @@ public class WorkspaceServiceImpl implements WorkspaceService {
     }
 
     private WorkspaceResponse toResponse(Workspace workspace) {
-        return WorkspaceResponse.builder()
-                .id(workspace.getId())
-                .name(workspace.getName())
-                .ownerEmail(workspace.getOwnerEmail())
-                .tenantId(workspace.getTenantId())
-                .createdAt(workspace.getCreatedAt())
-                .updatedAt(workspace.getUpdatedAt())
-                .build();
+        return new WorkspaceResponse(
+            workspace.getId(),
+            workspace.getName(),
+            workspace.getOwnerEmail(),
+            workspace.getTenantId(),
+            workspace.getCreatedAt(),
+            workspace.getUpdatedAt()
+        );
     }
 }

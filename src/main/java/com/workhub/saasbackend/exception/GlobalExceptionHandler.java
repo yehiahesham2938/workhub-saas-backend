@@ -44,13 +44,13 @@ public class GlobalExceptionHandler {
     }
 
     private ResponseEntity<ApiError> buildError(HttpStatus status, String message, List<String> details) {
-        ApiError apiError = ApiError.builder()
-                .timestamp(Instant.now())
-                .status(status.value())
-                .error(status.getReasonPhrase())
-                .message(message)
-                .details(details)
-                .build();
+        ApiError apiError = new ApiError(
+            Instant.now(),
+            status.value(),
+            status.getReasonPhrase(),
+            message,
+            details
+        );
 
         return ResponseEntity.status(status).body(apiError);
     }
