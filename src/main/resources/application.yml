@@ -1,0 +1,24 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: workhub-saas-backend
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/workhub}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    hikari:
+      # Allow app startup even if DB is temporarily unavailable.
+      initialization-fail-timeout: -1
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+    open-in-view: false
+
+logging:
+  level:
+    org.hibernate.SQL: info
