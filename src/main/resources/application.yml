@@ -8,8 +8,7 @@ spring:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/workhub}
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:postgres}
-    hikari:
-      # Allow app startup even if DB is temporarily unavailable.
+    hikari: 
       initialization-fail-timeout: -1
   jpa:
     hibernate:
@@ -22,3 +21,8 @@ spring:
 logging:
   level:
     org.hibernate.SQL: info
+
+jwt:
+  # Base64-encoded 32+ byte key for HS256 signatures.
+  secret: ${JWT_SECRET}
+  expiration-ms: ${JWT_EXPIRATION_MS:3600000}
