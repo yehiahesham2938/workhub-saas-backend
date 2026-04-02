@@ -1,17 +1,19 @@
 package com.workhub.saasbackend.exception;
 
-import jakarta.servlet.http.HttpServletRequest;
+import java.time.Instant;
+import java.util.stream.Collectors;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
-import java.time.Instant;
-import java.util.stream.Collectors;
+import jakarta.servlet.http.HttpServletRequest;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
@@ -50,6 +52,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiError> handleBadRequest(IllegalArgumentException ex,
                                                      HttpServletRequest request) {
         return buildError(HttpStatus.BAD_REQUEST, ex.getMessage(), request.getRequestURI());
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiError> handleConflict(DataIntegrityViolationException ex,
+                                                   HttpServletRequest request) {
+        return buildError(HttpStatus.CONFLICT, "Resource already exists", request.getRequestURI());
     }
 
     @ExceptionHandler(Exception.class)
