@@ -20,7 +20,7 @@ public final class TenantContext {
     public static String getRequiredTenantId() {
         String tenantId = CURRENT_TENANT.get();
         if (tenantId == null || tenantId.isBlank()) {
-            throw new MissingTenantException("Tenant header is required");
+            throw new MissingTenantException("Tenant ID is required in JWT");
         }
         return tenantId;
     }

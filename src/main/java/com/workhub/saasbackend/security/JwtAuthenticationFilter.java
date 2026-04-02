@@ -56,7 +56,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 );
                 authentication.setDetails(claims);
                 SecurityContextHolder.getContext().setAuthentication(authentication);
-                TenantContext.setTenantId(claims.tenantId());
             }
         } catch (JwtException | IllegalArgumentException ignored) {
             SecurityContextHolder.clearContext();
