@@ -18,6 +18,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.workhub.saasbackend.exception.ApiError;
+import com.workhub.saasbackend.observability.CorrelationIdFilter;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -27,7 +28,7 @@ import jakarta.servlet.http.HttpServletResponse;
 public class SecurityConfig {
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http,JwtAuthenticationFilter jwtAuthenticationFilter, TenantFilter tenantFilter, ObjectMapper objectMapper) throws Exception { http
+	public SecurityFilterChain securityFilterChain(HttpSecurity http,JwtAuthenticationFilter jwtAuthenticationFilter, TenantFilter tenantFilter, ObjectMapper objectMapper, CorrelationIdFilter correlationIdFilter) throws Exception { http
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(ex -> ex
@@ -35,11 +36,12 @@ public class SecurityConfig {
                         .accessDeniedHandler(accessDeniedHandler(objectMapper))
                 )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/actuator/health").permitAll()
+						.requestMatchers("/actuator/health","/actuator/info","/actuator/metrics").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterAfter(tenantFilter, JwtAuthenticationFilter.class);
+				.addFilterAfter(tenantFilter, JwtAuthenticationFilter.class)
+				.addFilterBefore(correlationIdFilter, JwtAuthenticationFilter.class);
 
         return http.build();
     }

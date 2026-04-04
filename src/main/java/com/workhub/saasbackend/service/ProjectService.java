@@ -15,4 +15,6 @@ public interface ProjectService {
     PagedResponse<ProjectResponse> listProjects(Pageable pageable);
 
     ProjectResponse getProject(UUID id);
+
+    void deleteProject(UUID id);
 }
