@@ -26,13 +26,13 @@ public class JobController {
 
 	@PostMapping
 	@ResponseStatus(HttpStatus.ACCEPTED)
-	@PreAuthorize("hasAnyRole('ADMIN','MEMBER','VIEWER')")
+	@PreAuthorize("hasAnyRole('ADMIN','USER')")
 	public JobResponse createJob() {
 		return jobService.createJob();
 	}
 
 	@GetMapping("/{id}")
-	@PreAuthorize("hasAnyRole('ADMIN','MEMBER','VIEWER')")
+	@PreAuthorize("hasAnyRole('ADMIN','USER')")
 	public JobResponse getJob(@PathVariable UUID id) {
 		return jobService.getJob(id);
 	}

@@ -13,6 +13,7 @@ import com.workhub.saasbackend.messaging.JobProducer;
 import com.workhub.saasbackend.repository.JobRepository;
 import com.workhub.saasbackend.security.TenantContext;
 import com.workhub.saasbackend.service.JobService;
+import org.springframework.security.access.AccessDeniedException;
 
 @Service
 public class JobServiceImpl implements JobService {
@@ -41,8 +42,11 @@ public class JobServiceImpl implements JobService {
 	@Transactional(readOnly = true)
 	public JobResponse getJob(UUID id) {
 		String tenantId = TenantContext.getRequiredTenantId();
-		Job job = jobRepository.findByIdAndTenantId(id, tenantId)
+		Job job = jobRepository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("Job not found"));
+		if (!tenantId.equals(job.getTenantId())) {
+			throw new AccessDeniedException("Access denied: tenant mismatch");
+		}
 		return toResponse(job);
 	}
 

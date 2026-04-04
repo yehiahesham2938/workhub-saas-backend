@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.access.AccessDeniedException;
 
 import com.workhub.saasbackend.dto.request.CreateWorkspaceRequest;
 import com.workhub.saasbackend.dto.response.WorkspaceResponse;
@@ -42,8 +43,11 @@ public class WorkspaceServiceImpl implements WorkspaceService {
     public WorkspaceResponse getWorkspace(UUID id) {
         String tenantId = TenantContext.getRequiredTenantId();
 
-        Workspace workspace = workspaceRepository.findByIdAndTenantId(id, tenantId)
+        Workspace workspace = workspaceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Workspace not found"));
+        if (!tenantId.equals(workspace.getTenantId())) {
+            throw new AccessDeniedException("Access denied: tenant mismatch");
+        }
 
         return toResponse(workspace);
     }

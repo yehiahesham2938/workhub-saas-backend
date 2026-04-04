@@ -29,7 +29,7 @@ Expected: Only projects created by `tenantA`.
 ```bash
 curl -i -H "Authorization: Bearer <token-tenantB>" http://localhost:8080/projects/<tenantA-project-id>
 ```
-Expected: 404 Not Found (hidden behind tenant filter).
+Expected: 403 Forbidden (Access denied: tenant mismatch).
 
 ### Updates are tenant-scoped
 - Create Task under a Project with same-tenant token works.
@@ -41,8 +41,8 @@ Expected: 404 Not Found (hidden behind tenant filter).
 curl -i -X DELETE -H "Authorization: Bearer <admin-token-tenantA>" http://localhost:8080/projects/<id>
 ```
 Expected: 204 No Content.
-- Other-tenant token: 404.
-- Non-admin same-tenant token: 403 Forbidden.
+- Other-tenant token: 403 Forbidden (tenant mismatch).
+- USER role in same tenant: 403 Forbidden (role restriction).
 
 Notes:
 - All repositories use `findByIdAndTenantId` and list by `tenantId`.

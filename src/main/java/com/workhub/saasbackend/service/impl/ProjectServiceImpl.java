@@ -4,6 +4,7 @@ import java.util.UUID;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -63,10 +64,25 @@ public class ProjectServiceImpl implements ProjectService {
     public ProjectResponse getProject(UUID id) {
         String tenantId = TenantContext.getRequiredTenantId();
 
-        Project project = projectRepository.findByIdAndTenantId(id, tenantId)
+        Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
+        if (!tenantId.equals(project.getTenantId())) {
+            throw new AccessDeniedException("Access denied: tenant mismatch");
+        }
 
         return toResponse(project);
+    }
+
+    @Override
+    @Transactional
+    public void deleteProject(UUID id) {
+        String tenantId = TenantContext.getRequiredTenantId();
+        Project project = projectRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
+        if (!tenantId.equals(project.getTenantId())) {
+            throw new AccessDeniedException("Access denied: tenant mismatch");
+        }
+        projectRepository.delete(project);
     }
 
     private UUID getCurrentUserId() {

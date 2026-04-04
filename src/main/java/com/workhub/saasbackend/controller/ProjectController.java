@@ -41,26 +41,26 @@ public class ProjectController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAnyRole('ADMIN','MEMBER','VIEWER')")
+    @PreAuthorize("hasAnyRole('ADMIN','USER')")
     public ProjectResponse createProject(@Valid @RequestBody CreateProjectRequest request) {
         return projectService.createProject(request);
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN','MEMBER','VIEWER')")
+    @PreAuthorize("hasAnyRole('ADMIN','USER')")
     public PagedResponse<ProjectResponse> listProjects(@PageableDefault(size = 20) Pageable pageable) {
         return projectService.listProjects(pageable);
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','MEMBER','VIEWER')")
+    @PreAuthorize("hasAnyRole('ADMIN','USER')")
     public ProjectResponse getProject(@PathVariable UUID id) {
         return projectService.getProject(id);
     }
 
     @PostMapping("/{id}/tasks")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAnyRole('ADMIN','MEMBER','VIEWER')")
+    @PreAuthorize("hasAnyRole('ADMIN','USER')")
     public TaskResponse createTask(@PathVariable UUID id, @Valid @RequestBody CreateTaskRequest request) {
         return taskService.createTask(id, request);
     }

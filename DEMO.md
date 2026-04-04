@@ -34,7 +34,7 @@ Expected: status DONE (or FAILED if simulated error).
 - Create project (allowed for ADMIN/MEMBER/VIEWER):
 ```bash
 curl -s -X POST http://localhost:8080/projects \
-  -H "Authorization: Bearer <member-or-admin-token>" \
+  -H "Authorization: Bearer <user-or-admin-token>" \
   -H "Content-Type: application/json" \
   -d '{"name":"Demo Project"}'
 ```
@@ -43,5 +43,5 @@ curl -s -X POST http://localhost:8080/projects \
 curl -i -X DELETE http://localhost:8080/projects/<id> \
   -H "Authorization: Bearer <admin-token>"
 ```
-Member token should return `403 Forbidden`.
+USER token should return `403 Forbidden`.
 
