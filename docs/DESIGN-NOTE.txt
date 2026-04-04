@@ -5,7 +5,7 @@ Workhub SaaS Backend - Design Note (Phase 1)
 - Stateless API secured via JWT; tenant identity extracted from JWT to enforce isolation.
 - Simplicity first: a single PostgreSQL database, shared schema; horizontal scale via stateless app instances.
 
-2) Layered Design
+2)  Layered Design
 - Controller: I/O boundary, validation, mapping to service calls. No domain logic.
 - Service: Orchestrates use cases, enforces tenant boundaries and authorization, defines transaction scopes with @Transactional.
 - Repository: Spring Data JPA for persistence.
