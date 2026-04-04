@@ -1,0 +1,113 @@
+{
+  "info": {
+    "name": "Workhub SaaS Backend - Phase 1",
+    "_postman_id": "a2c8b2b8-3f3c-4a62-9b2a-collection-demo",
+    "description": "Postman collection for login, /auth/me, projects and tasks, including transactional rollback demo.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth - Login",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": { "raw": "{{baseUrl}}/auth/login", "host": [ "{{baseUrl}}" ], "path": [ "auth", "login" ] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"admin@a.com\",\n  \"password\": \"Password123!\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Auth - Me",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{jwt}}" }
+        ],
+        "url": { "raw": "{{baseUrl}}/auth/me", "host": [ "{{baseUrl}}" ], "path": [ "auth", "me" ] }
+      }
+    },
+    {
+      "name": "Projects - Create",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{jwt}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": { "raw": "{{baseUrl}}/projects", "host": [ "{{baseUrl}}" ], "path": [ "projects" ] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Sample Project\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Projects - List",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{jwt}}" }
+        ],
+        "url": { "raw": "{{baseUrl}}/projects?page=0&size=20", "host": [ "{{baseUrl}}" ], "path": [ "projects" ], "query": [ { "key": "page", "value": "0" }, { "key": "size", "value": "20" } ] }
+      }
+    },
+    {
+      "name": "Tasks - Create",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{jwt}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": { "raw": "{{baseUrl}}/projects/{{projectId}}/tasks", "host": [ "{{baseUrl}}" ], "path": [ "projects", "{{projectId}}", "tasks" ] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"TODO\"\n}"
+        },
+        "description": "status: TODO | IN_PROGRESS | DONE"
+      }
+    },
+    {
+      "name": "Tasks - Update",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{jwt}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": { "raw": "{{baseUrl}}/tasks/{{taskId}}", "host": [ "{{baseUrl}}" ], "path": [ "tasks", "{{taskId}}" ] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"IN_PROGRESS\"\n}"
+        }
+      }
+    },
+    {
+      "name": "TX Demo - Create project + tasks then rollback",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{jwt}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": { "raw": "{{baseUrl}}/projects/tx-demo", "host": [ "{{baseUrl}}" ], "path": [ "projects", "tx-demo" ] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"TX Demo Project\",\n  \"taskStatuses\": [\"TODO\", \"IN_PROGRESS\", \"DONE\"]\n}"
+        },
+        "description": "This should respond with 202 and then fail with 500 due to simulated exception, resulting in a complete rollback (no project/tasks persisted)."
+      }
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "jwt", "value": "" },
+    { "key": "projectId", "value": "" },
+    { "key": "taskId", "value": "" }
+  ]
+}
+

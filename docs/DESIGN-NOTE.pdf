@@ -1,0 +1,38 @@
+Workhub SaaS Backend - Design Note (Phase 1)
+
+1) Architecture Overview
+- Clean layered architecture separating Controller, Service, Repository, Security, and DTO layers.
+- Stateless API secured via JWT; tenant identity extracted from JWT to enforce isolation.
+- Simplicity first: a single PostgreSQL database, shared schema; horizontal scale via stateless app instances.
+
+2) Layered Design
+- Controller: I/O boundary, validation, mapping to service calls. No domain logic.
+- Service: Orchestrates use cases, enforces tenant boundaries and authorization, defines transaction scopes with @Transactional.
+- Repository: Spring Data JPA for persistence.
+- Security: JwtAuthenticationFilter populates SecurityContext; TenantFilter derives tenant and sets TenantContext for downstream.
+- DTOs: Request/Response models with validation to keep controllers/services strongly typed and stable.
+
+3) Tenant Isolation
+- Every entity extends a base model carrying tenantId (or explicitly includes tenantId).
+- Tenant is resolved from JWT claims; the header Authorization: Bearer <token> is the single source of truth.
+- Services validate tenant equality for read/write. Repositories include per-tenant finders where necessary.
+- Result: no cross-tenant reads or writes, even if IDs are guessed.
+
+4) Transaction Boundary
+- Business transactions live in the Service layer annotated with @Transactional.
+- Example: create project, then multiple tasks, then intentionally throw an exception.
+- Because this is a single transaction, the exception triggers a rollback: neither the project nor the tasks remain persisted.
+- Rationale: All-or-nothing semantics across aggregate boundaries ensure consistency.
+
+5) Enterprise-Grade Considerations
+- Stateless auth + short-lived JWTs enable horizontal scaling.
+- Tenant isolation via data column + runtime validation is simple and efficient for many tenants per database.
+- Clear boundaries + DTO validation reduce coupling and boost maintainability.
+- Observability: correlation IDs enable request tracing and troubleshooting.
+- Extensibility: can evolve to schema-per-tenant or database-per-tenant when requirements warrant it.
+
+6) Future Enhancements
+- Add migration tooling and database versioning (Flyway).
+- Add audit logging and outbox pattern for reliable events.
+- Introduce rate limiting and fine-grained authorization policies per tenant.
+

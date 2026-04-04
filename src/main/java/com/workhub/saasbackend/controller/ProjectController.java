@@ -23,6 +23,7 @@ import com.workhub.saasbackend.dto.response.ProjectResponse;
 import com.workhub.saasbackend.dto.response.TaskResponse;
 import com.workhub.saasbackend.service.ProjectService;
 import com.workhub.saasbackend.service.TaskService;
+import com.workhub.saasbackend.dto.request.CreateProjectWithTasksRequest;
 
 import jakarta.validation.Valid;
 
@@ -70,5 +71,12 @@ public class ProjectController {
     @PreAuthorize("hasRole('ADMIN')")
     public void deleteProject(@PathVariable UUID id) {
         projectService.deleteProject(id);
+    }
+
+    @PostMapping("/tx-demo")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    public void createProjectWithTasksAndRollback(@Valid @RequestBody CreateProjectWithTasksRequest request) {
+        projectService.createProjectWithTasksAndRollback(request);
     }
 }

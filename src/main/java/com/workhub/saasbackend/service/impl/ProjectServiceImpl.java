@@ -16,16 +16,23 @@ import com.workhub.saasbackend.dto.response.ProjectResponse;
 import com.workhub.saasbackend.entity.Project;
 import com.workhub.saasbackend.exception.ResourceNotFoundException;
 import com.workhub.saasbackend.repository.ProjectRepository;
+import com.workhub.saasbackend.repository.TaskRepository;
 import com.workhub.saasbackend.security.TenantContext;
 import com.workhub.saasbackend.service.ProjectService;
+import com.workhub.saasbackend.dto.request.CreateProjectWithTasksRequest;
+import com.workhub.saasbackend.entity.Task;
+import com.workhub.saasbackend.entity.TaskStatus;
+import com.workhub.saasbackend.dto.shared.TaskStatusDto;
 
 @Service
 public class ProjectServiceImpl implements ProjectService {
 
     private final ProjectRepository projectRepository;
+    private final TaskRepository taskRepository;
 
-    public ProjectServiceImpl(ProjectRepository projectRepository) {
+    public ProjectServiceImpl(ProjectRepository projectRepository, TaskRepository taskRepository) {
         this.projectRepository = projectRepository;
+        this.taskRepository = taskRepository;
     }
 
     @Override
@@ -83,6 +90,32 @@ public class ProjectServiceImpl implements ProjectService {
             throw new AccessDeniedException("Access denied: tenant mismatch");
         }
         projectRepository.delete(project);
+    }
+
+    @Override
+    @Transactional
+    public void createProjectWithTasksAndRollback(CreateProjectWithTasksRequest request) {
+        String tenantId = TenantContext.getRequiredTenantId();
+
+        Project project = new Project();
+        project.setTenantId(tenantId);
+        project.setName(request.getName());
+        project.setCreatedBy(getCurrentUserId());
+        Project savedProject = projectRepository.save(project);
+
+        int index = 0;
+        for (TaskStatusDto statusDto : request.getTaskStatuses()) {
+            if (index == 1) {
+                // Force an unchecked exception after creating the first task
+                throw new RuntimeException("Simulated failure to demonstrate transaction rollback");
+            }
+            Task task = new Task();
+            task.setTenantId(tenantId);
+            task.setProject(savedProject);
+            task.setStatus(TaskStatus.valueOf(statusDto.name()));
+            taskRepository.save(task);
+            index++;
+        }
     }
 
     private UUID getCurrentUserId() {
