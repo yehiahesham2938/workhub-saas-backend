@@ -1,38 +1,123 @@
-Workhub SaaS Backend - Design Note (Phase 1)
-
-1) Architecture Overview
-- Clean layered architecture separating Controller, Service, Repository, Security, and DTO layers.
-- Stateless API secured via JWT; tenant identity extracted from JWT to enforce isolation.
-- Simplicity first: a single PostgreSQL database, shared schema; horizontal scale via stateless app instances.
-
-2)  Layered Design
-- Controller: I/O boundary, validation, mapping to service calls. No domain logic.
-- Service: Orchestrates use cases, enforces tenant boundaries and authorization, defines transaction scopes with @Transactional.
-- Repository: Spring Data JPA for persistence.
-- Security: JwtAuthenticationFilter populates SecurityContext; TenantFilter derives tenant and sets TenantContext for downstream.
-- DTOs: Request/Response models with validation to keep controllers/services strongly typed and stable.
-
-3) Tenant Isolation
-- Every entity extends a base model carrying tenantId (or explicitly includes tenantId).
-- Tenant is resolved from JWT claims; the header Authorization: Bearer <token> is the single source of truth.
-- Services validate tenant equality for read/write. Repositories include per-tenant finders where necessary.
-- Result: no cross-tenant reads or writes, even if IDs are guessed.
-
-4) Transaction Boundary
-- Business transactions live in the Service layer annotated with @Transactional.
-- Example: create project, then multiple tasks, then intentionally throw an exception.
-- Because this is a single transaction, the exception triggers a rollback: neither the project nor the tasks remain persisted.
-- Rationale: All-or-nothing semantics across aggregate boundaries ensure consistency.
-
-5) Enterprise-Grade Considerations
-- Stateless auth + short-lived JWTs enable horizontal scaling.
-- Tenant isolation via data column + runtime validation is simple and efficient for many tenants per database.
-- Clear boundaries + DTO validation reduce coupling and boost maintainability.
-- Observability: correlation IDs enable request tracing and troubleshooting.
-- Extensibility: can evolve to schema-per-tenant or database-per-tenant when requirements warrant it.
-
-6) Future Enhancements
-- Add migration tooling and database versioning (Flyway).
-- Add audit logging and outbox pattern for reliable events.
-- Introduce rate limiting and fine-grained authorization policies per tenant.
+DESIGN NOTE
+1. Architecture Overview
+The system is designed as a scalable, modular SaaS backend that separates concerns across clearly defined layers. The architecture follows a layered + service-oriented approach, with the goal of balancing simplicity (for development speed) and extensibility (for future growth).
+At a high level, the system consists of:
+•	API Layer
+Handles incoming HTTP requests, performs validation, and maps them to application use cases. This layer is stateless and acts purely as an interface. 
+•	Application Layer (Services / Use Cases)
+Contains the orchestration logic. Each service method represents a business use case (e.g., create workspace, assign user, process task).
+It coordinates domain objects and enforces transaction boundaries. 
+•	Domain Layer
+Encapsulates business rules and core logic. Entities, value objects, and domain services live here.
+This layer is independent of infrastructure concerns. 
+•	Infrastructure Layer
+Handles persistence, messaging, and integration with external systems.
+Includes repositories, database access, caching, and event publishing. 
+Architectural Style
+The system follows a modular monolith approach initially:
+•	Easier to develop and deploy 
+•	Strong consistency within a single codebase 
+•	Clear module boundaries (can evolve into microservices later) 
+Modules are organized by business capability, not technical layers (e.g., User, Workspace, Task).
+Scalability Considerations
+•	Stateless API → enables horizontal scaling 
+•	Database indexing and query optimization 
+•	Optional caching layer (e.g., Redis) for frequently accessed data 
+•	Asynchronous processing (queues/events) for non-blocking operations 
+Evolution Path
+The architecture is intentionally designed so that:
+•	Modules can be extracted into microservices if needed 
+•	Messaging patterns (event-driven) are already compatible with distributed systems 
+________________________________________
+2. Multi-Tenant Approach
+The system is built as a multi-tenant SaaS platform, where multiple customers (tenants) share the same application instance.
+Chosen Strategy: Shared Database, Shared Schema
+Each tenant’s data is stored in the same database and tables, with a tenant_id column used to isolate data.
+Why this approach?
+•	Lower infrastructure cost 
+•	Simpler deployment and maintenance 
+•	Efficient resource utilization 
+•	Easier onboarding of new tenants 
+Tenant Isolation
+Isolation is enforced at multiple levels:
+1.	Application Level 
+o	Every request carries tenant context (from authentication token) 
+o	Services automatically scope operations to the tenant 
+2.	Data Access Layer 
+o	All queries are filtered by tenant_id 
+o	Repository layer ensures no cross-tenant access 
+3.	Security 
+o	Authentication tokens include tenant identity 
+o	Authorization checks are tenant-aware 
+Tenant Context Propagation
+•	Extracted from JWT/session 
+•	Passed implicitly through service calls 
+•	Never manually provided by the client for sensitive operations 
+Trade-offs
+Advantages:
+•	High efficiency 
+•	Simpler scaling 
+•	Centralized management 
+Disadvantages:
+•	Requires strict discipline in query filtering 
+•	Less physical isolation than per-tenant databases 
+Future Evolution
+If needed, the system can evolve to:
+•	Hybrid tenancy (premium tenants get dedicated DBs) 
+•	Schema-per-tenant for stronger isolation 
+________________________________________
+3. Transaction Boundaries
+Transaction management is critical to ensure data consistency while maintaining performance.
+Definition of a Transaction
+A transaction represents a single business operation that must either:
+•	Complete fully, or 
+•	Fail completely (atomicity) 
+Transaction Scope
+Transactions are defined at the application service level:
+•	One use case = one transaction 
+•	Example: 
+o	Create workspace + assign owner → single transaction 
+o	Update task + log activity → single transaction 
+ACID Guarantees
+Within a single service boundary:
+•	Atomicity – all changes succeed or none 
+•	Consistency – business rules are enforced 
+•	Isolation – concurrent operations don’t conflict 
+•	Durability – committed data is persisted 
+Avoiding Long Transactions
+The system avoids long-running or cross-service transactions because they:
+•	Reduce performance 
+•	Increase risk of deadlocks 
+•	Do not scale well 
+Distributed Operations
+For workflows that span multiple steps or modules, the system uses eventual consistency:
+Approach: Saga Pattern
+•	Each step runs in its own transaction 
+•	Failures trigger compensating actions 
+Example:
+1.	Create task 
+2.	Assign user 
+3.	Send notification
+→ If step 3 fails, earlier steps may remain, or compensation is applied 
+Idempotency and Reliability
+To ensure robustness:
+•	Idempotency keys prevent duplicate processing 
+•	Retry mechanisms handle transient failures 
+•	Message queues ensure reliable event delivery 
+Consistency Strategy
+•	Strong consistency within a module 
+•	Eventual consistency across modules 
+This hybrid approach provides both:
+•	Reliability for critical operations 
+•	Scalability for distributed workflows 
+________________________________________
+Conclusion
+This design balances simplicity, scalability, and maintainability:
+•	A modular architecture enables clean separation of concerns 
+•	A shared-schema multi-tenant model optimizes cost and efficiency 
+•	Well-defined transaction boundaries ensure data integrity 
+The system is intentionally designed to evolve:
+•	From monolith → microservices 
+•	From shared tenancy → hybrid or isolated tenancy 
+•	From synchronous flows → event-driven architecture
 
