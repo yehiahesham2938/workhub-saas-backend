@@ -2,6 +2,7 @@ package com.workhub.saasbackend.security;
 
 import java.time.Instant;
 import java.util.Date;
+import java.nio.charset.StandardCharsets;
 
 import javax.crypto.SecretKey;
 
@@ -14,6 +15,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
+import io.jsonwebtoken.io.DecodingException;
 import io.jsonwebtoken.security.Keys;
 
 @Service
@@ -24,8 +26,19 @@ public class JwtService {
 
     public JwtService(@Value("${jwt.secret}") String secret,
                       @Value("${jwt.expiration-ms}") long expirationMs) {
-        this.signingKey = Keys.hmacShaKeyFor(Decoders.BASE64.decode(secret));
+        this.signingKey = buildSigningKey(secret);
         this.expirationMs = expirationMs;
+    }
+
+    private SecretKey buildSigningKey(String secret) {
+        if (secret == null || secret.isBlank()) {
+            throw new IllegalArgumentException("JWT secret must not be blank");
+        }
+        try {
+            return Keys.hmacShaKeyFor(Decoders.BASE64.decode(secret));
+        } catch (DecodingException | IllegalArgumentException ex) {
+            return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+        }
     }
 
     public String generateToken(String userId, String tenantId, UserRole role) {

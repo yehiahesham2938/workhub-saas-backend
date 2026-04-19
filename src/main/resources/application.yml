@@ -7,7 +7,7 @@ spring:
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/workhub}
     username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:postgres}
+    password: ${DB_PASSWORD:password}
     hikari: 
       initialization-fail-timeout: -1
   rabbitmq:
@@ -20,6 +20,7 @@ spring:
       ddl-auto: update
     properties:
       hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
     open-in-view: false
 
@@ -28,8 +29,8 @@ logging:
     org.hibernate.SQL: info
 
 jwt:
-  secret: my-super-secret-key-1234567890123456
-  expiration-ms: 3600000
+  secret: ${JWT_SECRET:VGhpcy1pcy1ub3QtMy1yZWFsbHktYS0yNTYtYml0LXNlY3JldC1zdHJpbmchISE=}
+  expiration-ms: ${JWT_EXPIRATION_MS:3600000}
 
 management:
   endpoints:
