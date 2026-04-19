@@ -25,12 +25,12 @@ import com.workhub.saasbackend.entity.TaskStatus;
 import com.workhub.saasbackend.dto.shared.TaskStatusDto;
 
 @Service
-public class ProjectServiceImpl implements ProjectService {
+public class JobServiceImpl  implements JobService {
 
     private final ProjectRepository projectRepository;
     private final TaskRepository taskRepository;
 
-    public ProjectServiceImpl(ProjectRepository projectRepository, TaskRepository taskRepository) {
+    public JobServiceImpl(ProjectRepository projectRepository, TaskRepository taskRepository) {
         this.projectRepository = projectRepository;
         this.taskRepository = taskRepository;
     }

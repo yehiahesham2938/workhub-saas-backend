@@ -28,9 +28,8 @@ logging:
     org.hibernate.SQL: info
 
 jwt:
-  # Base64-encoded 32+ byte key for HS256 signatures.
-  secret: ${JWT_SECRET}
-  expiration-ms: ${JWT_EXPIRATION_MS:3600000}
+  secret: my-super-secret-key-1234567890123456
+  expiration-ms: 3600000
 
 management:
   endpoints:
