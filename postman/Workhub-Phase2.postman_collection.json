@@ -1,0 +1,405 @@
+{
+  "info": {
+    "name": "Workhub SaaS Backend - Phase 2",
+    "_postman_id": "b3c9c3c9-4f4f-5b73-ac3b-phase2-collection",
+    "description": "Phase 2 (Week 12) demo collection: login Tenant A admin + Tenant B admin, async job lifecycle (create -> poll until DONE), cross-tenant denial, RBAC matrix, and actuator observability checks.\n\nVariables to set in your environment or collection:\n- baseUrl (default http://localhost:8080)\n- adminAEmail, memberAEmail, adminBEmail (defaults below)\n- password (default pw)\n\nRunnable in Postman or via Newman: `newman run postman/Workhub-Phase2.postman_collection.json`.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "adminAEmail", "value": "admin@a.com" },
+    { "key": "memberAEmail", "value": "alice@a.com" },
+    { "key": "adminBEmail", "value": "admin@b.com" },
+    { "key": "password", "value": "pw" },
+    { "key": "tokenA", "value": "" },
+    { "key": "tokenAUser", "value": "" },
+    { "key": "tokenB", "value": "" },
+    { "key": "jobId", "value": "" },
+    { "key": "projectAId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "1. Auth",
+      "item": [
+        {
+          "name": "Login Tenant A admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.collectionVariables.set('tokenA', j.token);",
+                  "pm.test('token issued', () => pm.expect(j.token).to.be.a('string').and.not.empty);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"{{adminAEmail}}\",\"password\":\"{{password}}\"}"
+            }
+          }
+        },
+        {
+          "name": "Login Tenant A member (non-admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('tokenAUser', pm.response.json().token);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"{{memberAEmail}}\",\"password\":\"{{password}}\"}"
+            }
+          }
+        },
+        {
+          "name": "Login Tenant B admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('tokenB', pm.response.json().token);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"{{adminBEmail}}\",\"password\":\"{{password}}\"}"
+            }
+          }
+        },
+        {
+          "name": "GET /auth/me (Tenant A admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('tenant id present', () => pm.expect(pm.response.json().tenantId).to.be.a('string'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{tokenA}}" }],
+            "url": "{{baseUrl}}/auth/me"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Async Job Lifecycle",
+      "item": [
+        {
+          "name": "Create Job (Tenant A) - expect 202 PENDING",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('202 Accepted', () => pm.response.to.have.status(202));",
+                  "const j = pm.response.json();",
+                  "pm.collectionVariables.set('jobId', j.id);",
+                  "pm.test('initial status is PENDING', () => pm.expect(j.status).to.equal('PENDING'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{tokenA}}" }],
+            "url": "{{baseUrl}}/jobs"
+          }
+        },
+        {
+          "name": "Poll Job Status (run repeatedly until DONE)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "console.log('job status =', j.status);",
+                  "pm.test('status is one of PENDING/PROCESSING/DONE/FAILED', () => pm.expect(['PENDING','PROCESSING','DONE','FAILED']).to.include(j.status));",
+                  "pm.test('eventually DONE (run a few times)', () => pm.expect(j.status).to.not.equal('FAILED'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{tokenA}}" }],
+            "url": "{{baseUrl}}/jobs/{{jobId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Cross-tenant denial",
+      "item": [
+        {
+          "name": "Tenant B reads Tenant A job - expect 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('404 Not Found (cross-tenant policy)', () => pm.response.to.have.status(404));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{tokenB}}" }],
+            "url": "{{baseUrl}}/jobs/{{jobId}}"
+          }
+        },
+        {
+          "name": "Create Tenant A project (seed for matrix)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('projectAId', pm.response.json().id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{tokenA}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/projects",
+            "body": { "mode": "raw", "raw": "{\"name\":\"Phase2 Demo Project\"}" }
+          }
+        },
+        {
+          "name": "Tenant B GET Tenant A project - expect 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('404 Not Found', () => pm.response.to.have.status(404));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{tokenB}}" }],
+            "url": "{{baseUrl}}/projects/{{projectAId}}"
+          }
+        },
+        {
+          "name": "Tenant B DELETE Tenant A project - expect 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('404 Not Found', () => pm.response.to.have.status(404));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{tokenB}}" }],
+            "url": "{{baseUrl}}/projects/{{projectAId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. RBAC matrix",
+      "item": [
+        {
+          "name": "No token on /projects - expect 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('401 Unauthorized', () => pm.response.to.have.status(401));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": { "method": "GET", "url": "{{baseUrl}}/projects" }
+        },
+        {
+          "name": "Tenant A member DELETE project - expect 403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('403 Forbidden (role violation)', () => pm.response.to.have.status(403));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{tokenAUser}}" }],
+            "url": "{{baseUrl}}/projects/{{projectAId}}"
+          }
+        },
+        {
+          "name": "Tenant A admin DELETE project - expect 204",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{tokenA}}" }],
+            "url": "{{baseUrl}}/projects/{{projectAId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Observability",
+      "item": [
+        {
+          "name": "GET /actuator/health - expect 200 UP",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('status = UP', () => pm.expect(pm.response.json().status).to.equal('UP'));",
+                  "pm.test('X-Correlation-Id echoed', () => pm.expect(pm.response.headers.get('X-Correlation-Id')).to.be.a('string'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "X-Correlation-Id", "value": "phase2-postman-{{$timestamp}}" }],
+            "url": "{{baseUrl}}/actuator/health"
+          }
+        },
+        {
+          "name": "GET /actuator/health/readiness",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('status = UP', () => pm.expect(pm.response.json().status).to.equal('UP'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": { "method": "GET", "url": "{{baseUrl}}/actuator/health/readiness" }
+        },
+        {
+          "name": "GET /actuator/health/liveness",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('status = UP', () => pm.expect(pm.response.json().status).to.equal('UP'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": { "method": "GET", "url": "{{baseUrl}}/actuator/health/liveness" }
+        },
+        {
+          "name": "GET /actuator/info",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('app metadata present', () => pm.expect(pm.response.json().app).to.be.an('object'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": { "method": "GET", "url": "{{baseUrl}}/actuator/info" }
+        },
+        {
+          "name": "GET /actuator/metrics",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('names array', () => pm.expect(pm.response.json().names).to.be.an('array').and.not.empty);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": { "method": "GET", "url": "{{baseUrl}}/actuator/metrics" }
+        }
+      ]
+    }
+  ]
+}

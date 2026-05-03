@@ -9,6 +9,7 @@ import com.workhub.saasbackend.dto.response.JobResponse;
 import com.workhub.saasbackend.entity.Job;
 import com.workhub.saasbackend.entity.JobStatus;
 import com.workhub.saasbackend.exception.ResourceNotFoundException;
+import com.workhub.saasbackend.messaging.JobMessage;
 import com.workhub.saasbackend.messaging.JobProducer;
 import com.workhub.saasbackend.repository.JobRepository;
 import com.workhub.saasbackend.security.TenantContext;
@@ -36,7 +37,7 @@ public class JobServiceImpl implements JobService {
         job.setErrorMessage(null);
 
         Job saved = jobRepository.save(job);
-        jobProducer.send(saved.getId());
+        jobProducer.send(new JobMessage(saved.getId(), tenantId));
         return toResponse(saved);
     }
 

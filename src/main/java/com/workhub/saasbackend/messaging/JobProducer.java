@@ -1,7 +1,5 @@
 package com.workhub.saasbackend.messaging;
 
-import java.util.UUID;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.AmqpException;
@@ -24,12 +22,13 @@ public class JobProducer {
 		this.jobsExchange = jobsExchange;
 	}
 
-	public void send(UUID jobId) {
+	public void send(JobMessage message) {
 		try {
-			rabbitTemplate.convertAndSend(jobsExchange.getName(), RabbitMQConfig.JOBS_ROUTING_KEY, jobId.toString());
+			rabbitTemplate.convertAndSend(jobsExchange.getName(), RabbitMQConfig.JOBS_ROUTING_KEY, message);
+			log.info("published job message jobId={} tenantId={}", message.getJobId(), message.getTenantId());
 		} catch (AmqpException ex) {
-			log.warn("Failed to publish job {} to RabbitMQ, keeping job record saved", jobId, ex);
+			log.warn("failed to publish job to RabbitMQ; job stays PENDING for retry jobId={} tenantId={}",
+					message.getJobId(), message.getTenantId(), ex);
 		}
 	}
 }
-

@@ -1,9 +1,9 @@
 package com.workhub.saasbackend.messaging;
 
-import java.util.UUID;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
+import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,32 +26,49 @@ public class JobConsumer {
 
 	@RabbitListener(queues = RabbitMQConfig.JOBS_QUEUE)
 	@Transactional
-	public void handleJobMessage(String jobIdString) {
-		UUID jobId = UUID.fromString(jobIdString);
-		Job job = jobRepository.findById(jobId).orElse(null);
-		if (job == null) {
-			return;
+	public void handleJobMessage(JobMessage message) {
+		if (message == null || message.getJobId() == null || message.getTenantId() == null) {
+			log.warn("rejecting malformed job message: {}", message);
+			throw new AmqpRejectAndDontRequeueException("malformed JobMessage");
 		}
+
+		MDC.put("jobId", String.valueOf(message.getJobId()));
+		MDC.put("tenantId", message.getTenantId());
 		try {
+			Job job = jobRepository.findByIdAndTenantId(message.getJobId(), message.getTenantId()).orElse(null);
+			if (job == null) {
+				log.warn("job not found for tenant; dropping message");
+				return;
+			}
+
+			log.info("job transition: PENDING -> PROCESSING");
 			job.setStatus(JobStatus.PROCESSING);
 			jobRepository.save(job);
-			// Simulate processing time
-			Thread.sleep(1500);
+
+			Thread.sleep(500);
+
+			log.info("job transition: PROCESSING -> DONE");
 			job.setStatus(JobStatus.DONE);
 			job.setErrorMessage(null);
 			jobRepository.save(job);
-		} catch (InterruptedException e) {
+		} catch (InterruptedException ex) {
 			Thread.currentThread().interrupt();
-			job.setStatus(JobStatus.FAILED);
-			job.setErrorMessage("Interrupted");
-			jobRepository.save(job);
-			log.warn("Job {} interrupted", jobId);
+			markFailed(message, "interrupted");
+			log.warn("job interrupted", ex);
 		} catch (Exception ex) {
-			job.setStatus(JobStatus.FAILED);
-			job.setErrorMessage(ex.getMessage());
-			jobRepository.save(job);
-			log.error("Job {} failed: {}", jobId, ex.getMessage());
+			markFailed(message, ex.getMessage());
+			log.error("job failed", ex);
+		} finally {
+			MDC.remove("jobId");
+			MDC.remove("tenantId");
 		}
 	}
-}
 
+	private void markFailed(JobMessage message, String errorMessage) {
+		jobRepository.findByIdAndTenantId(message.getJobId(), message.getTenantId()).ifPresent(job -> {
+			job.setStatus(JobStatus.FAILED);
+			job.setErrorMessage(errorMessage);
+			jobRepository.save(job);
+		});
+	}
+}

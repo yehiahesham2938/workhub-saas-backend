@@ -8,13 +8,22 @@ spring:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/workhub}
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:password}
-    hikari: 
+    hikari:
       initialization-fail-timeout: -1
   rabbitmq:
     host: ${RABBITMQ_HOST:localhost}
     port: ${RABBITMQ_PORT:5672}
     username: ${RABBITMQ_USERNAME:guest}
     password: ${RABBITMQ_PASSWORD:guest}
+    listener:
+      simple:
+        retry:
+          enabled: true
+          initial-interval: 500ms
+          multiplier: 2
+          max-attempts: 3
+          max-interval: 5000ms
+        default-requeue-rejected: false
   jpa:
     hibernate:
       ddl-auto: update
@@ -27,6 +36,8 @@ spring:
 logging:
   level:
     org.hibernate.SQL: info
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] cid=%X{correlationId:-} tenant=%X{tenantId:-} job=%X{jobId:-} %logger{36} - %msg%n"
 
 jwt:
   secret: ${JWT_SECRET:VGhpcy1pcy1ub3QtMy1yZWFsbHktYS0yNTYtYml0LXNlY3JldC1zdHJpbmchISE=}
@@ -41,3 +52,23 @@ management:
     health:
       probes:
         enabled: true
+      show-details: when_authorized
+      group:
+        readiness:
+          include: readinessState,db
+        liveness:
+          include: livenessState
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+  info:
+    env:
+      enabled: true
+
+info:
+  app:
+    name: workhub-saas-backend
+    phase: phase2-week12
+    description: Multi-tenant SaaS backend

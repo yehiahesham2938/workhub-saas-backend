@@ -110,4 +110,39 @@ Expected matrix summary:
 - Cross-tenant list operations: `200` with tenant-filtered empty/own-only data.
 - Cross-tenant get/update/delete/create-child-by-foreign-parent: `404`.
 - Same-tenant role violation: `403`.
+- Missing/invalid token: `401`.
+
+### Step 2.4 - Automated tests backing this proof
+
+Run:
+
+```bash
+mvn -Dtest='TenantIsolation*IT' test
+```
+
+Tests in [src/test/java/com/workhub/saasbackend/integration/](src/test/java/com/workhub/saasbackend/integration/):
+
+- `TenantIsolationProjectIT` - cross-tenant read/list/delete/nested-create
+- `TenantIsolationTaskIT` - cross-tenant update via `PATCH /tasks/{id}`
+- `TenantIsolationWorkspaceIT` - workspace list/get isolation
+- `TenantIsolationJobIT` - job read isolation
+- `AbstractTenantIsolationIT` - shared seed / token harness
+
+Each test seeds tenant B data, calls every endpoint with tenant A's JWT, and asserts the documented status codes.
+
+### Step 2.5 - End-to-end Phase 2 demo
+
+For a one-shot, scripted, end-to-end verification (login, async job, cross-tenant denial, observability):
+
+```bash
+BASE_URL=http://localhost:8080 ./scripts/phase2-demo.sh
+```
+
+The script exits non-zero if any expected status code does not match.
+
+A matching Postman collection covering the same flows (auth, async job, cross-tenant, RBAC matrix, observability) is at [postman/Workhub-Phase2.postman_collection.json](postman/Workhub-Phase2.postman_collection.json). It can be run interactively in Postman or headlessly via Newman:
+
+```bash
+newman run postman/Workhub-Phase2.postman_collection.json --env-var baseUrl=http://localhost:8080
+```
 

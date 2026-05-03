@@ -2,6 +2,7 @@ package com.workhub.saasbackend.security;
 
 import java.io.IOException;
 
+import org.slf4j.MDC;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -14,6 +15,8 @@ import jakarta.servlet.http.HttpServletResponse;
 
 @Component
 public class TenantFilter extends OncePerRequestFilter {
+
+    public static final String TENANT_MDC_KEY = "tenantId";
 
     private static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
@@ -31,12 +34,14 @@ public class TenantFilter extends OncePerRequestFilter {
         String tenantId = resolveTenantId(request);
         if (tenantId != null && !tenantId.isBlank()) {
             TenantContext.setTenantId(tenantId);
+            MDC.put(TENANT_MDC_KEY, tenantId);
         }
 
         try {
             filterChain.doFilter(request, response);
         } finally {
             TenantContext.clear();
+            MDC.remove(TENANT_MDC_KEY);
         }
     }
 
