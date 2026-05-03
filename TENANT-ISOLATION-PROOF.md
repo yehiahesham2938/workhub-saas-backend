@@ -1,50 +1,113 @@
----
-alwaysApply: false
----
-## How to Test Tenant Isolation
+## Tenant Isolation Policy and Verification
 
-- Prereqs: Two JWTs with different tenantId claims: `tenantA`, `tenantB`.
-- Use distinct Authorization headers for each.
+### Step 2.2 - Consistent cross-tenant policy
 
-### Create resources under tenantA
+Policy used by this project:
+
+- Cross-tenant object access returns `404 Not Found` (anti-enumeration).
+- `403 Forbidden` is reserved for authorization/role violations where the resource ownership is otherwise valid.
+- `401 Unauthorized` is only for authentication failures (missing/invalid auth).
+
+How this is enforced:
+
+- Service-layer object lookups use tenant-scoped repository methods (`findByIdAndTenantId`, `findAllByTenantId`) as the primary isolation mechanism.
+- Global exception handling maps:
+  - `ResourceNotFoundException` -> `404`
+  - `AccessDeniedException` -> `403`
+  - `AuthenticationException` -> `401`
+
+### Step 2.3 - Tenant matrix (read/write/list/update/delete)
+
+Prerequisites:
+
+- `TOKEN_A_ADMIN`: tenant A, role ADMIN
+- `TOKEN_A_USER`: tenant A, role USER
+- `TOKEN_B_ADMIN`: tenant B, role ADMIN
+- Base URL: `http://localhost:8080`
+
+Seed tenant A resources:
+
 ```bash
-curl -s -X POST http://localhost:8080/api/v1/workspaces \
-  -H "Authorization: Bearer <token-tenantA>" -H "Content-Type: application/json" \
-  -d '{"name":"A-Workspace","ownerEmail":"a@ex.com"}'
+# Create project under tenant A
+PROJECT_A_JSON=$(curl -s -X POST "$BASE_URL/projects" \
+  -H "Authorization: Bearer $TOKEN_A_ADMIN" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"A-Project"}')
+PROJECT_A_ID=$(echo "$PROJECT_A_JSON" | jq -r '.id')
+
+# Create task under tenant A project
+TASK_A_JSON=$(curl -s -X POST "$BASE_URL/projects/$PROJECT_A_ID/tasks" \
+  -H "Authorization: Bearer $TOKEN_A_ADMIN" \
+  -H "Content-Type: application/json" \
+  -d '{"status":"TODO"}')
+TASK_A_ID=$(echo "$TASK_A_JSON" | jq -r '.id')
+
+# Create workspace under tenant A
+WORKSPACE_A_JSON=$(curl -s -X POST "$BASE_URL/api/v1/workspaces" \
+  -H "Authorization: Bearer $TOKEN_A_ADMIN" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"A-Workspace","ownerEmail":"a@ex.com"}')
+WORKSPACE_A_ID=$(echo "$WORKSPACE_A_JSON" | jq -r '.id')
+
+# Create job under tenant A
+JOB_A_JSON=$(curl -s -X POST "$BASE_URL/jobs" \
+  -H "Authorization: Bearer $TOKEN_A_ADMIN")
+JOB_A_ID=$(echo "$JOB_A_JSON" | jq -r '.id')
 ```
+
+Tenant B cross-tenant attempts against tenant A resources:
+
 ```bash
-curl -s -X POST http://localhost:8080/projects \
-  -H "Authorization: Bearer <token-tenantA>" -H "Content-Type: application/json" \
-  -d '{"name":"A-Project"}'
+# 1) /projects list (B should not see A project)
+curl -s -H "Authorization: Bearer $TOKEN_B_ADMIN" "$BASE_URL/projects"
+# Expected: 200 with no PROJECT_A_ID in response content
+
+# 2) /projects/{id} get
+curl -i -H "Authorization: Bearer $TOKEN_B_ADMIN" "$BASE_URL/projects/$PROJECT_A_ID"
+# Expected: 404
+
+# 3) /projects/{id} delete
+curl -i -X DELETE -H "Authorization: Bearer $TOKEN_B_ADMIN" "$BASE_URL/projects/$PROJECT_A_ID"
+# Expected: 404
+
+# 4) /projects/{id}/tasks nested create under A parent
+curl -i -X POST "$BASE_URL/projects/$PROJECT_A_ID/tasks" \
+  -H "Authorization: Bearer $TOKEN_B_ADMIN" \
+  -H "Content-Type: application/json" \
+  -d '{"status":"IN_PROGRESS"}'
+# Expected: 404
+
+# 5) /tasks/{id} update
+curl -i -X PATCH "$BASE_URL/tasks/$TASK_A_ID" \
+  -H "Authorization: Bearer $TOKEN_B_ADMIN" \
+  -H "Content-Type: application/json" \
+  -d '{"status":"DONE"}'
+# Expected: 404
+
+# 6) /api/v1/workspaces list (B should not see A workspace)
+curl -s -H "Authorization: Bearer $TOKEN_B_ADMIN" "$BASE_URL/api/v1/workspaces"
+# Expected: 200 with no WORKSPACE_A_ID in response content
+
+# 7) /api/v1/workspaces/{id} get
+curl -i -H "Authorization: Bearer $TOKEN_B_ADMIN" "$BASE_URL/api/v1/workspaces/$WORKSPACE_A_ID"
+# Expected: 404
+
+# 8) /jobs/{id} read isolation
+curl -i -H "Authorization: Bearer $TOKEN_B_ADMIN" "$BASE_URL/jobs/$JOB_A_ID"
+# Expected: 404
 ```
 
-### Verify tenantA can list/find only its data
+Role-based (same tenant) verification for `403` policy:
+
 ```bash
-curl -s -H "Authorization: Bearer <token-tenantA>" http://localhost:8080/projects
+# Same-tenant USER attempts admin-only delete
+curl -i -X DELETE -H "Authorization: Bearer $TOKEN_A_USER" "$BASE_URL/projects/$PROJECT_A_ID"
+# Expected: 403 (role violation)
 ```
-Expected: Only projects created by `tenantA`.
 
-### Cross-tenant access must fail
-- Try to GET a `tenantA` project with `tenantB` token:
-```bash
-curl -i -H "Authorization: Bearer <token-tenantB>" http://localhost:8080/projects/<tenantA-project-id>
-```
-Expected: 403 Forbidden (Access denied: tenant mismatch).
+Expected matrix summary:
 
-### Updates are tenant-scoped
-- Create Task under a Project with same-tenant token works.
-- Using other-tenant token returns 404 for update attempts.
-
-### Deletion restricted by tenant and role
-- ADMIN from same tenant can DELETE its project:
-```bash
-curl -i -X DELETE -H "Authorization: Bearer <admin-token-tenantA>" http://localhost:8080/projects/<id>
-```
-Expected: 204 No Content.
-- Other-tenant token: 403 Forbidden (tenant mismatch).
-- USER role in same tenant: 403 Forbidden (role restriction).
-
-Notes:
-- All repositories use `findByIdAndTenantId` and list by `tenantId`.
-- Services pull tenant via `TenantContext` in every operation.
+- Cross-tenant list operations: `200` with tenant-filtered empty/own-only data.
+- Cross-tenant get/update/delete/create-child-by-foreign-parent: `404`.
+- Same-tenant role violation: `403`.
 
