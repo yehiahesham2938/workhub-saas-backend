@@ -17,7 +17,6 @@ import com.workhub.saasbackend.repository.ProjectRepository;
 import com.workhub.saasbackend.repository.TaskRepository;
 import com.workhub.saasbackend.security.TenantContext;
 import com.workhub.saasbackend.service.TaskService;
-import org.springframework.security.access.AccessDeniedException;
 
 @Service
 public class TaskServiceImpl implements TaskService {
@@ -35,11 +34,8 @@ public class TaskServiceImpl implements TaskService {
     public TaskResponse createTask(UUID projectId, CreateTaskRequest request) {
         String tenantId = TenantContext.getRequiredTenantId();
 
-        Project project = projectRepository.findById(projectId)
+        Project project = projectRepository.findByIdAndTenantId(projectId, tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
-        if (!tenantId.equals(project.getTenantId())) {
-            throw new AccessDeniedException("Access denied: tenant mismatch");
-        }
 
         Task task = new Task();
         task.setTenantId(tenantId);
@@ -55,11 +51,8 @@ public class TaskServiceImpl implements TaskService {
     public TaskResponse updateTask(UUID taskId, UpdateTaskRequest request) {
         String tenantId = TenantContext.getRequiredTenantId();
 
-        Task task = taskRepository.findById(taskId)
+        Task task = taskRepository.findByIdAndTenantId(taskId, tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Task not found"));
-        if (!tenantId.equals(task.getTenantId())) {
-            throw new AccessDeniedException("Access denied: tenant mismatch");
-        }
 
         task.setStatus(toEntityStatus(request.getStatus()));
 

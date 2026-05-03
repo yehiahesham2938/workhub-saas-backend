@@ -6,3 +6,4 @@ target/
 .env
 .env.*
 !.env.example
+PHASE2-FULL-MARK-GUIDE.md
