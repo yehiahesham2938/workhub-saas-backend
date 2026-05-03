@@ -1,6 +1,7 @@
 package com.workhub.saasbackend.integration;
 
 import java.util.Map;
+import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +14,8 @@ import org.springframework.test.web.servlet.MvcResult;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.workhub.saasbackend.entity.UserRole;
+import com.workhub.saasbackend.security.JwtService;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -28,15 +31,20 @@ public abstract class AbstractTenantIsolationIT {
     @Autowired
     protected ObjectMapper objectMapper;
 
+    @Autowired
+    protected JwtService jwtService;
+
     protected String tokenAAdmin;
     protected String tokenBAdmin;
     protected String tokenAUser;
+    protected String tokenAViewer;
 
     @BeforeEach
     void authenticateTenants() throws Exception {
         tokenAAdmin = loginAndGetToken("admin-a@a.com");
         tokenBAdmin = loginAndGetToken("admin-b@b.com");
         tokenAUser = loginAndGetToken("member-a@a.com");
+        tokenAViewer = jwtService.generateToken(UUID.randomUUID().toString(), "tenant-a", UserRole.VIEWER);
     }
 
     protected String loginAndGetToken(String email) throws Exception {

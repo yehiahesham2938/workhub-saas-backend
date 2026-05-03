@@ -43,7 +43,7 @@ public class AuthController {
 	}
 
 	@GetMapping("/me")
-	@PreAuthorize("hasAnyRole('ADMIN','USER')")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_USER')")
 	public MeResponse me() {
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 		if (authentication == null) {

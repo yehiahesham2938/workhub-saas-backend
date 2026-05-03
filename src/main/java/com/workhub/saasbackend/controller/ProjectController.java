@@ -43,40 +43,40 @@ public class ProjectController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_USER')")
     public ProjectResponse createProject(@Valid @RequestBody CreateProjectRequest request) {
         return projectService.createProject(request);
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_USER')")
     public PagedResponse<ProjectResponse> listProjects(@PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         return projectService.listProjects(pageable);
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_USER')")
     public ProjectResponse getProject(@PathVariable UUID id) {
         return projectService.getProject(id);
     }
 
     @PostMapping("/{id}/tasks")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_USER')")
     public TaskResponse createTask(@PathVariable UUID id, @Valid @RequestBody CreateTaskRequest request) {
         return taskService.createTask(id, request);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public void deleteProject(@PathVariable UUID id) {
         projectService.deleteProject(id);
     }
 
     @PostMapping("/tx-demo")
     @ResponseStatus(HttpStatus.ACCEPTED)
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_USER')")
     public void createProjectWithTasksAndRollback(@Valid @RequestBody CreateProjectWithTasksRequest request) {
         projectService.createProjectWithTasksAndRollback(request);
     }

@@ -31,19 +31,19 @@ public class WorkspaceController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_USER')")
     public WorkspaceResponse createWorkspace(@Valid @RequestBody CreateWorkspaceRequest request) {
         return workspaceService.createWorkspace(request);
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_USER')")
     public WorkspaceResponse getWorkspace(@PathVariable UUID id) {
         return workspaceService.getWorkspace(id);
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_USER')")
     public List<WorkspaceResponse> listWorkspaces() {
         return workspaceService.listWorkspaces();
     }

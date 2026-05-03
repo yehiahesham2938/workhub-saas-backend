@@ -15,6 +15,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import com.workhub.saasbackend.entity.UserRole;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -49,10 +50,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             if (jwtService.validateToken(token)) {
                 JwtService.JwtClaims claims = jwtService.extractClaims(token);
-                String role = claims.role().name();
-                SimpleGrantedAuthority authority = "ADMIN".equals(role)
-                        ? new SimpleGrantedAuthority("ROLE_ADMIN")
-                        : new SimpleGrantedAuthority("ROLE_USER");
+                SimpleGrantedAuthority authority = mapAuthority(claims.role());
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                         claims.userId(),
                         null,
@@ -66,5 +64,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private SimpleGrantedAuthority mapAuthority(UserRole role) {
+        return switch (role) {
+            case ADMIN -> new SimpleGrantedAuthority("ROLE_ADMIN");
+            case MEMBER -> new SimpleGrantedAuthority("ROLE_USER");
+            case VIEWER -> new SimpleGrantedAuthority("ROLE_VIEWER");
+        };
     }
 }
