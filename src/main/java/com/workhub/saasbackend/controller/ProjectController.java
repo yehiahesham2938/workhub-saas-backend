@@ -3,6 +3,7 @@ package com.workhub.saasbackend.controller;
 import java.util.UUID;
 
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -49,7 +50,7 @@ public class ProjectController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
-    public PagedResponse<ProjectResponse> listProjects(@PageableDefault(size = 20) Pageable pageable) {
+    public PagedResponse<ProjectResponse> listProjects(@PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         return projectService.listProjects(pageable);
     }
 

@@ -36,6 +36,8 @@ public class SecurityConfig {
                         .accessDeniedHandler(accessDeniedHandler(objectMapper))
                 )
                 .authorizeHttpRequests(auth -> auth
+						.requestMatchers("/auth/login").permitAll()
+						.requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**", "/webjars/**").permitAll()
 						.requestMatchers("/actuator/health","/actuator/info","/actuator/metrics").permitAll()
                         .anyRequest().authenticated()
                 )

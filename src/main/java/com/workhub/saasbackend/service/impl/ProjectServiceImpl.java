@@ -1,9 +1,14 @@
 package com.workhub.saasbackend.service.impl;
 
 import java.util.UUID;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -26,6 +31,8 @@ import com.workhub.saasbackend.dto.shared.TaskStatusDto;
 
 @Service
 public class ProjectServiceImpl implements ProjectService {
+
+    private static final Set<String> ALLOWED_SORT_PROPERTIES = Set.of("id", "name", "createdAt", "updatedAt");
 
     private final ProjectRepository projectRepository;
     private final TaskRepository taskRepository;
@@ -54,7 +61,13 @@ public class ProjectServiceImpl implements ProjectService {
     public PagedResponse<ProjectResponse> listProjects(Pageable pageable) {
         String tenantId = TenantContext.getRequiredTenantId();
 
-        Page<Project> page = projectRepository.findAllByTenantId(tenantId, pageable);
+        Pageable safePageable = PageRequest.of(
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                sanitizeSort(pageable.getSort())
+        );
+
+        Page<Project> page = projectRepository.findAllByTenantId(tenantId, safePageable);
         return new PagedResponse<>(
                 page.getContent().stream().map(this::toResponse).toList(),
                 page.getNumber(),
@@ -140,5 +153,24 @@ public class ProjectServiceImpl implements ProjectService {
                 project.getCreatedAt(),
                 project.getUpdatedAt()
         );
+    }
+
+    private Sort sanitizeSort(Sort sort) {
+        if (sort == null || sort.isUnsorted()) {
+            return Sort.by(Sort.Direction.DESC, "createdAt");
+        }
+
+        List<Sort.Order> allowedOrders = new ArrayList<>();
+        for (Sort.Order order : sort) {
+            if (ALLOWED_SORT_PROPERTIES.contains(order.getProperty())) {
+                allowedOrders.add(order);
+            }
+        }
+
+        if (allowedOrders.isEmpty()) {
+            return Sort.by(Sort.Direction.DESC, "createdAt");
+        }
+
+        return Sort.by(allowedOrders);
     }
 }
