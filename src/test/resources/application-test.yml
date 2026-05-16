@@ -14,3 +14,29 @@ spring:
     listener:
       simple:
         auto-startup: false
+  cache:
+    type: caffeine
+
+workhub:
+  quotas:
+    plans:
+      FREE:
+        max-workspaces: 1
+        max-projects: 2
+        max-open-jobs: 1
+        max-tasks-per-project: 2
+      STARTER:
+        max-workspaces: 1
+        max-projects: 20
+        max-open-jobs: 10
+        max-tasks-per-project: 50
+      PRO:
+        max-workspaces: 20
+        max-projects: 100
+        max-open-jobs: 50
+        max-tasks-per-project: 200
+      ENTERPRISE:
+        max-workspaces: 100
+        max-projects: 500
+        max-open-jobs: 200
+        max-tasks-per-project: 1000

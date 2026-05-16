@@ -10,4 +10,8 @@ import com.workhub.saasbackend.entity.Task;
 public interface TaskRepository extends JpaRepository<Task, UUID> {
 
     Optional<Task> findByIdAndTenantId(UUID id, String tenantId);
+
+    long countByTenantIdAndProjectId(String tenantId, UUID projectId);
+
+    void deleteByTenantIdAndProjectId(String tenantId, UUID projectId);
 }

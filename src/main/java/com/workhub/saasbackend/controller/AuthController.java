@@ -15,8 +15,11 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.workhub.saasbackend.dto.request.LoginRequest;
+import com.workhub.saasbackend.entity.AuditActionResult;
+import com.workhub.saasbackend.entity.AuditEventType;
 import com.workhub.saasbackend.entity.UserRole;
 import com.workhub.saasbackend.security.JwtService;
+import com.workhub.saasbackend.service.AuditService;
 
 import jakarta.validation.Valid;
 
@@ -26,9 +29,11 @@ import jakarta.validation.Valid;
 public class AuthController {
 
 	private final JwtService jwtService;
+	private final AuditService auditService;
 
-	public AuthController(JwtService jwtService) {
+	public AuthController(JwtService jwtService, AuditService auditService) {
 		this.jwtService = jwtService;
+		this.auditService = auditService;
 	}
 
 	@PostMapping("/login")
@@ -39,6 +44,8 @@ public class AuthController {
 		String tenantId = resolveTenantIdFromEmail(email);
 		UserRole role = email.toLowerCase().startsWith("admin") ? UserRole.ADMIN : UserRole.MEMBER;
 		String token = jwtService.generateToken(userId.toString(), tenantId, role);
+		auditService.record(tenantId, AuditEventType.AUTH_LOGIN_SUCCESS, userId.toString(),
+				"user", userId.toString(), AuditActionResult.SUCCESS, email);
 		return new LoginResponse(token, userId.toString(), tenantId, role.name());
 	}
 

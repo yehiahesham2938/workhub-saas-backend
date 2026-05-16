@@ -8,6 +8,8 @@ import com.workhub.saasbackend.dto.request.CreateProjectRequest;
 import com.workhub.saasbackend.dto.response.PagedResponse;
 import com.workhub.saasbackend.dto.response.ProjectResponse;
 import com.workhub.saasbackend.dto.request.CreateProjectWithTasksRequest;
+import com.workhub.saasbackend.dto.request.ProvisionProjectSagaRequest;
+import com.workhub.saasbackend.dto.response.WorkflowExecutionResponse;
 
 public interface ProjectService {
 
@@ -25,4 +27,6 @@ public interface ProjectService {
      * Nothing should be persisted when this method finishes.
      */
     void createProjectWithTasksAndRollback(CreateProjectWithTasksRequest request);
+
+    WorkflowExecutionResponse provisionProjectWithSaga(ProvisionProjectSagaRequest request);
 }

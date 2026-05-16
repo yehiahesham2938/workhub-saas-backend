@@ -9,13 +9,18 @@ import com.workhub.saasbackend.dto.request.CreateTaskRequest;
 import com.workhub.saasbackend.dto.request.UpdateTaskRequest;
 import com.workhub.saasbackend.dto.response.TaskResponse;
 import com.workhub.saasbackend.dto.shared.TaskStatusDto;
+import com.workhub.saasbackend.entity.AuditActionResult;
+import com.workhub.saasbackend.entity.AuditEventType;
 import com.workhub.saasbackend.entity.Project;
 import com.workhub.saasbackend.entity.Task;
 import com.workhub.saasbackend.entity.TaskStatus;
 import com.workhub.saasbackend.exception.ResourceNotFoundException;
 import com.workhub.saasbackend.repository.ProjectRepository;
 import com.workhub.saasbackend.repository.TaskRepository;
+import com.workhub.saasbackend.security.SecurityActorSupport;
 import com.workhub.saasbackend.security.TenantContext;
+import com.workhub.saasbackend.service.AuditService;
+import com.workhub.saasbackend.service.QuotaService;
 import com.workhub.saasbackend.service.TaskService;
 
 @Service
@@ -23,10 +28,17 @@ public class TaskServiceImpl implements TaskService {
 
     private final TaskRepository taskRepository;
     private final ProjectRepository projectRepository;
+    private final AuditService auditService;
+    private final QuotaService quotaService;
 
-    public TaskServiceImpl(TaskRepository taskRepository, ProjectRepository projectRepository) {
+    public TaskServiceImpl(TaskRepository taskRepository,
+                           ProjectRepository projectRepository,
+                           AuditService auditService,
+                           QuotaService quotaService) {
         this.taskRepository = taskRepository;
         this.projectRepository = projectRepository;
+        this.auditService = auditService;
+        this.quotaService = quotaService;
     }
 
     @Override
@@ -37,12 +49,16 @@ public class TaskServiceImpl implements TaskService {
         Project project = projectRepository.findByIdAndTenantId(projectId, tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
 
+        quotaService.checkTaskQuota(tenantId, projectId);
+
         Task task = new Task();
         task.setTenantId(tenantId);
         task.setProject(project);
         task.setStatus(toEntityStatus(request.getStatus()));
 
         Task saved = taskRepository.save(task);
+        auditService.record(tenantId, AuditEventType.TASK_CREATED, SecurityActorSupport.currentActorId(),
+                "task", saved.getId().toString(), AuditActionResult.SUCCESS, request.getStatus().name());
         return toResponse(saved);
     }
 
@@ -54,9 +70,13 @@ public class TaskServiceImpl implements TaskService {
         Task task = taskRepository.findByIdAndTenantId(taskId, tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Task not found"));
 
+        TaskStatus previous = task.getStatus();
         task.setStatus(toEntityStatus(request.getStatus()));
 
         Task updated = taskRepository.save(task);
+        auditService.record(tenantId, AuditEventType.TASK_STATUS_CHANGED, SecurityActorSupport.currentActorId(),
+                "task", updated.getId().toString(), AuditActionResult.SUCCESS,
+                previous.name() + " -> " + updated.getStatus().name());
         return toResponse(updated);
     }
 

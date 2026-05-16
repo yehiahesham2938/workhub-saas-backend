@@ -14,4 +14,6 @@ public interface ProjectRepository extends JpaRepository<Project, UUID> {
     Page<Project> findAllByTenantId(String tenantId, Pageable pageable);
 
     Optional<Project> findByIdAndTenantId(UUID id, String tenantId);
+
+    long countByTenantId(String tenantId);
 }

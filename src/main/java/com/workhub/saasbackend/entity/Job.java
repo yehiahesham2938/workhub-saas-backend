@@ -5,9 +5,12 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
 @Entity
-@Table(name = "jobs")
+@Table(name = "jobs", uniqueConstraints = {
+		@UniqueConstraint(columnNames = {"tenant_id", "idempotency_key"})
+})
 public class Job extends BaseTenantEntity {
 
 	@Enumerated(EnumType.STRING)
@@ -16,6 +19,9 @@ public class Job extends BaseTenantEntity {
 
 	@Column(length = 512)
 	private String errorMessage;
+
+	@Column(length = 128)
+	private String idempotencyKey;
 
 	public Job() {
 	}
@@ -34,6 +40,14 @@ public class Job extends BaseTenantEntity {
 
 	public void setErrorMessage(String errorMessage) {
 		this.errorMessage = errorMessage;
+	}
+
+	public String getIdempotencyKey() {
+		return idempotencyKey;
+	}
+
+	public void setIdempotencyKey(String idempotencyKey) {
+		this.idempotencyKey = idempotencyKey;
 	}
 }
 

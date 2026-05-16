@@ -32,10 +32,13 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
     open-in-view: false
+  cache:
+    type: caffeine
 
 logging:
   level:
     org.hibernate.SQL: info
+    com.workhub.business: info
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] cid=%X{correlationId:-} tenant=%X{tenantId:-} job=%X{jobId:-} %logger{36} - %msg%n"
 
@@ -47,7 +50,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics
+        include: health,info,metrics,prometheus
   endpoint:
     health:
       probes:
@@ -55,9 +58,12 @@ management:
       show-details: when_authorized
       group:
         readiness:
-          include: readinessState,db
+          include: readinessState,db,rabbitQueues
         liveness:
           include: livenessState
+  metrics:
+    tags:
+      application: ${spring.application.name}
   health:
     livenessstate:
       enabled: true
@@ -67,8 +73,32 @@ management:
     env:
       enabled: true
 
+workhub:
+  quotas:
+    plans:
+      FREE:
+        max-workspaces: 2
+        max-projects: 5
+        max-open-jobs: 3
+        max-tasks-per-project: 10
+      STARTER:
+        max-workspaces: 5
+        max-projects: 20
+        max-open-jobs: 10
+        max-tasks-per-project: 50
+      PRO:
+        max-workspaces: 20
+        max-projects: 100
+        max-open-jobs: 50
+        max-tasks-per-project: 200
+      ENTERPRISE:
+        max-workspaces: 100
+        max-projects: 500
+        max-open-jobs: 200
+        max-tasks-per-project: 1000
+
 info:
   app:
     name: workhub-saas-backend
-    phase: phase2-week12
-    description: Multi-tenant SaaS backend
+    phase: phase3-enterprise
+    description: Multi-tenant SaaS backend with audit, saga, quotas, and caching
