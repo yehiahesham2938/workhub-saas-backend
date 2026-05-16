@@ -18,7 +18,9 @@ import org.springframework.http.MediaType;
 import com.workhub.saasbackend.config.CacheConfig;
 
 import com.workhub.saasbackend.entity.AuditEventType;
+import com.workhub.saasbackend.entity.JobStatus;
 import com.workhub.saasbackend.entity.WorkflowStatus;
+import com.workhub.saasbackend.repository.JobRepository;
 import com.workhub.saasbackend.repository.AuditEventRepository;
 import com.workhub.saasbackend.repository.ProjectRepository;
 
@@ -29,6 +31,9 @@ class Phase3EnterpriseIT extends AbstractTenantIsolationIT {
 
     @Autowired
     private ProjectRepository projectRepository;
+
+    @Autowired
+    private JobRepository jobRepository;
 
     @Autowired
     private CacheManager cacheManager;
@@ -57,6 +62,20 @@ class Phase3EnterpriseIT extends AbstractTenantIsolationIT {
                 .stream()
                 .anyMatch(event -> "project".equals(event.getResourceType()));
         assertThat(denied).isTrue();
+    }
+
+    @Test
+    void jobCreate_shouldWriteJobCreatedAuditRecord() throws Exception {
+        String jobId = createJob(tokenAAdmin, "audit-job-" + UUID.randomUUID());
+
+        boolean found = auditEventRepository.findByTenantIdAndEventTypeOrderByOccurredAtDesc(
+                        "tenant-a", AuditEventType.JOB_CREATED)
+                .stream()
+                .anyMatch(event -> jobId.equals(event.getResourceId()));
+        assertThat(found).isTrue();
+        assertThat(jobRepository.findByIdAndTenantId(UUID.fromString(jobId), "tenant-a"))
+                .map(job -> job.getStatus())
+                .contains(JobStatus.PENDING);
     }
 
     @Test

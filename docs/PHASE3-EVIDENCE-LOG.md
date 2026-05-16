@@ -23,4 +23,6 @@
 | 2026-05-16 | B6 | `.github/workflows/ci.yml` |
 | 2026-05-16 | B7 | `TenantFeatureService` plan-based flags |
 
-Run verification: `mvn test` then `scripts/phase3-demo.ps1` on branch `phase-3-enterprise`.
+| 2026-05-16 | Final | `main` and `phase-3-enterprise` aligned; `JobConsumerTest` + job audit IT added |
+
+Run verification: `mvn test` then `scripts/phase3-demo.ps1` (PostgreSQL + RabbitMQ for full runtime demo).

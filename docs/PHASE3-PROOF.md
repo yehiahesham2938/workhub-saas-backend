@@ -76,7 +76,8 @@ Or run: `scripts/phase3-demo.ps1`
 
 | Test class | Proves |
 |------------|--------|
-| `Phase3EnterpriseIT` | Audit, idempotency, saga, quota, cache, cross-tenant |
+| `Phase3EnterpriseIT` | Audit, idempotency, saga, quota, cache, cross-tenant, job create audit |
+| `JobConsumerTest` | Job lifecycle audits (PROCESSING → COMPLETED / FAILED), idempotent skip |
 | `Phase3ObservabilityIT` | Correlation header, metrics, actuator |
 | `Phase3AdminOperationsIT` | Admin endpoints, tenant isolation |
 | `BusinessMetricsTest` | Micrometer counters |
