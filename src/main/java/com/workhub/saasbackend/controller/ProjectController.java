@@ -25,6 +25,8 @@ import com.workhub.saasbackend.dto.response.TaskResponse;
 import com.workhub.saasbackend.service.ProjectService;
 import com.workhub.saasbackend.service.TaskService;
 import com.workhub.saasbackend.dto.request.CreateProjectWithTasksRequest;
+import com.workhub.saasbackend.dto.request.ProvisionProjectSagaRequest;
+import com.workhub.saasbackend.dto.response.WorkflowExecutionResponse;
 
 import jakarta.validation.Valid;
 
@@ -79,5 +81,12 @@ public class ProjectController {
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_USER')")
     public void createProjectWithTasksAndRollback(@Valid @RequestBody CreateProjectWithTasksRequest request) {
         projectService.createProjectWithTasksAndRollback(request);
+    }
+
+    @PostMapping("/provision-saga")
+    @ResponseStatus(HttpStatus.OK)
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_USER')")
+    public WorkflowExecutionResponse provisionProjectWithSaga(@Valid @RequestBody ProvisionProjectSagaRequest request) {
+        return projectService.provisionProjectWithSaga(request);
     }
 }

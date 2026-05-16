@@ -22,13 +22,15 @@ public class JobProducer {
 		this.jobsExchange = jobsExchange;
 	}
 
-	public void send(JobMessage message) {
+	public boolean send(JobMessage message) {
 		try {
 			rabbitTemplate.convertAndSend(jobsExchange.getName(), RabbitMQConfig.JOBS_ROUTING_KEY, message);
 			log.info("published job message jobId={} tenantId={}", message.getJobId(), message.getTenantId());
+			return true;
 		} catch (AmqpException ex) {
 			log.warn("failed to publish job to RabbitMQ; job stays PENDING for retry jobId={} tenantId={}",
 					message.getJobId(), message.getTenantId(), ex);
+			return false;
 		}
 	}
 }

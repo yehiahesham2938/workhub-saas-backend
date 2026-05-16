@@ -89,7 +89,19 @@ public abstract class AbstractTenantIsolationIT {
 
     protected String createJob(String token) throws Exception {
         MvcResult result = mockMvc.perform(post("/jobs")
-                        .header("Authorization", bearer(token)))
+                        .header("Authorization", bearer(token))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isAccepted())
+                .andReturn();
+        return readJson(result).get("id").asText();
+    }
+
+    protected String createJob(String token, String idempotencyKey) throws Exception {
+        MvcResult result = mockMvc.perform(post("/jobs")
+                        .header("Authorization", bearer(token))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(asJson(Map.of("idempotencyKey", idempotencyKey))))
                 .andExpect(status().isAccepted())
                 .andReturn();
         return readJson(result).get("id").asText();

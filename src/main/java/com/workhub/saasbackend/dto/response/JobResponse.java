@@ -10,6 +10,7 @@ public record JobResponse(
 	JobStatus status,
 	String tenantId,
 	String errorMessage,
+	String idempotencyKey,
 	Instant createdAt,
 	Instant updatedAt
 ) {}

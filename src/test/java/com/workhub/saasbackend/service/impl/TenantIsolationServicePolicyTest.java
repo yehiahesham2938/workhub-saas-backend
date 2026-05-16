@@ -14,6 +14,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -22,7 +23,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 
+import com.workhub.saasbackend.dto.request.CreateJobRequest;
 import com.workhub.saasbackend.dto.request.CreateTaskRequest;
 import com.workhub.saasbackend.dto.request.UpdateTaskRequest;
 import com.workhub.saasbackend.dto.shared.TaskStatusDto;
@@ -37,8 +41,13 @@ import com.workhub.saasbackend.messaging.JobProducer;
 import com.workhub.saasbackend.repository.JobRepository;
 import com.workhub.saasbackend.repository.ProjectRepository;
 import com.workhub.saasbackend.repository.TaskRepository;
+import com.workhub.saasbackend.repository.WorkflowExecutionRepository;
 import com.workhub.saasbackend.repository.WorkspaceRepository;
 import com.workhub.saasbackend.security.TenantContext;
+import com.workhub.saasbackend.security.TenantResourceGuard;
+import com.workhub.saasbackend.observability.BusinessMetrics;
+import com.workhub.saasbackend.service.AuditService;
+import com.workhub.saasbackend.service.QuotaService;
 
 @ExtendWith(MockitoExtension.class)
 class TenantIsolationServicePolicyTest {
@@ -61,6 +70,21 @@ class TenantIsolationServicePolicyTest {
     @Mock
     private JobProducer jobProducer;
 
+    @Mock
+    private WorkflowExecutionRepository workflowExecutionRepository;
+
+    @Mock
+    private AuditService auditService;
+
+    @Mock
+    private QuotaService quotaService;
+
+    @Mock
+    private TenantResourceGuard tenantResourceGuard;
+
+    @Mock
+    private BusinessMetrics businessMetrics;
+
     @InjectMocks
     private ProjectServiceImpl projectService;
 
@@ -73,9 +97,17 @@ class TenantIsolationServicePolicyTest {
     @InjectMocks
     private JobServiceImpl jobService;
 
+    @BeforeEach
+    void setUpSecurityContext() {
+        UUID userId = UUID.randomUUID();
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(userId.toString(), null, List.of()));
+    }
+
     @AfterEach
     void clearTenantContext() {
         TenantContext.clear();
+        SecurityContextHolder.clearContext();
     }
 
     @Test
@@ -94,7 +126,9 @@ class TenantIsolationServicePolicyTest {
     void projectGet_crossTenantIdReturnsNotFound() {
         UUID projectId = UUID.randomUUID();
         TenantContext.setTenantId(TENANT_B);
-        when(projectRepository.findByIdAndTenantId(projectId, TENANT_B)).thenReturn(Optional.empty());
+        when(tenantResourceGuard.requireTenantResource(
+                eq(projectId), eq("project"), any(), any(), any()))
+                .thenThrow(new ResourceNotFoundException("Project not found"));
 
         assertThrows(ResourceNotFoundException.class, () -> projectService.getProject(projectId));
     }
@@ -203,5 +237,24 @@ class TenantIsolationServicePolicyTest {
         when(jobRepository.findByIdAndTenantId(jobId, TENANT_A)).thenReturn(Optional.of(job));
 
         assertEquals(jobId, jobService.getJob(jobId).id());
+    }
+
+    @Test
+    void createJob_withIdempotencyKey_reusesExisting() {
+        TenantContext.setTenantId(TENANT_A);
+        UUID jobId = UUID.randomUUID();
+        Job existing = new Job();
+        existing.setId(jobId);
+        existing.setTenantId(TENANT_A);
+        existing.setStatus(JobStatus.PENDING);
+        existing.setIdempotencyKey("key-1");
+        existing.setCreatedAt(Instant.now());
+        existing.setUpdatedAt(Instant.now());
+
+        when(jobRepository.findByTenantIdAndIdempotencyKey(TENANT_A, "key-1")).thenReturn(Optional.of(existing));
+
+        CreateJobRequest request = new CreateJobRequest();
+        request.setIdempotencyKey("key-1");
+        assertEquals(jobId, jobService.createJob(request).id());
     }
 }

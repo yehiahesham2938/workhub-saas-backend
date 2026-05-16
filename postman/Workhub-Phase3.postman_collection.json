@@ -1,0 +1,146 @@
+{
+  "info": {
+    "name": "Workhub SaaS Backend - Phase 3",
+    "description": "Enterprise features: audit, jobs, saga, quotas, admin ops, observability.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "jwt", "value": "" },
+    { "key": "correlationId", "value": "postman-phase3-demo" },
+    { "key": "projectId", "value": "" },
+    { "key": "jobId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth - Login",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "X-Correlation-Id", "value": "{{correlationId}}" }
+        ],
+        "url": "{{baseUrl}}/auth/login",
+        "body": { "mode": "raw", "raw": "{\n  \"email\": \"admin@a.com\",\n  \"password\": \"Password123!\"\n}" }
+      }
+    },
+    {
+      "name": "Projects - Create",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{jwt}}" },
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "X-Correlation-Id", "value": "{{correlationId}}" }
+        ],
+        "url": "{{baseUrl}}/projects",
+        "body": { "mode": "raw", "raw": "{\n  \"name\": \"Phase3 Project\"\n}" }
+      }
+    },
+    {
+      "name": "Jobs - Create (idempotent)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{jwt}}" },
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "X-Correlation-Id", "value": "{{correlationId}}" }
+        ],
+        "url": "{{baseUrl}}/jobs",
+        "body": { "mode": "raw", "raw": "{\n  \"idempotencyKey\": \"postman-demo-key-1\"\n}" }
+      }
+    },
+    {
+      "name": "Projects - Provision Saga",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{jwt}}" },
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "X-Correlation-Id", "value": "{{correlationId}}" }
+        ],
+        "url": "{{baseUrl}}/projects/provision-saga",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Saga Project\",\n  \"defaultTaskStatuses\": [\"TODO\", \"IN_PROGRESS\"],\n  \"simulateFailure\": false\n}"
+        }
+      }
+    },
+    {
+      "name": "Admin - Audit Log",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{jwt}}" },
+          { "key": "X-Correlation-Id", "value": "{{correlationId}}" }
+        ],
+        "url": "{{baseUrl}}/admin/audit?page=0&size=20"
+      }
+    },
+    {
+      "name": "Admin - Quota Usage",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{jwt}}" },
+          { "key": "X-Correlation-Id", "value": "{{correlationId}}" }
+        ],
+        "url": "{{baseUrl}}/admin/quotas"
+      }
+    },
+    {
+      "name": "Admin - Tenant Summary",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{jwt}}" },
+          { "key": "X-Correlation-Id", "value": "{{correlationId}}" }
+        ],
+        "url": "{{baseUrl}}/admin/tenant/summary"
+      }
+    },
+    {
+      "name": "Admin - Dead Letter Queue",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{jwt}}" },
+          { "key": "X-Correlation-Id", "value": "{{correlationId}}" }
+        ],
+        "url": "{{baseUrl}}/admin/queues/dead-letter"
+      }
+    },
+    {
+      "name": "Admin - Retry Job",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{jwt}}" },
+          { "key": "X-Correlation-Id", "value": "{{correlationId}}" }
+        ],
+        "url": "{{baseUrl}}/admin/jobs/{{jobId}}/retry"
+      }
+    },
+    {
+      "name": "Observability - Metrics Index",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/actuator/metrics"
+      }
+    },
+    {
+      "name": "Observability - Project Created Metric",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/actuator/metrics/workhub.projects.created"
+      }
+    },
+    {
+      "name": "Observability - Readiness",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/actuator/health/readiness"
+      }
+    }
+  ]
+}

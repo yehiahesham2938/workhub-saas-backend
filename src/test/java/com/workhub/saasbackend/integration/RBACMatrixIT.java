@@ -47,7 +47,9 @@ class RBACMatrixIT extends AbstractTenantIsolationIT {
         assertMatrix(() -> get("/api/v1/workspaces"), 200, 200);
         assertMatrix(() -> get("/api/v1/workspaces/" + workspaceId), 200, 200);
 
-        assertMatrix(() -> post("/jobs"), 202, 202);
+        assertMatrix(() -> post("/jobs")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(asJsonUnchecked(Map.of())), 202, 202);
         assertMatrix(() -> get("/jobs/" + jobId), 200, 200);
 
         assertMatrix(() -> post("/projects/tx-demo")
