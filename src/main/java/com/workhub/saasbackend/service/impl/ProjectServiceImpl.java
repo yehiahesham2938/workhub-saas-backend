@@ -38,6 +38,8 @@ import com.workhub.saasbackend.security.TenantContext;
 import com.workhub.saasbackend.security.TenantResourceGuard;
 import com.workhub.saasbackend.observability.BusinessLogger;
 import com.workhub.saasbackend.observability.BusinessMetrics;
+import com.workhub.saasbackend.feature.TenantFeature;
+import com.workhub.saasbackend.feature.TenantFeatureService;
 import com.workhub.saasbackend.service.AuditService;
 import com.workhub.saasbackend.service.ProjectService;
 import com.workhub.saasbackend.service.QuotaService;
@@ -56,6 +58,7 @@ public class ProjectServiceImpl implements ProjectService {
     private final QuotaService quotaService;
     private final TenantResourceGuard tenantResourceGuard;
     private final BusinessMetrics businessMetrics;
+    private final TenantFeatureService tenantFeatureService;
 
     public ProjectServiceImpl(ProjectRepository projectRepository,
                               TaskRepository taskRepository,
@@ -63,7 +66,8 @@ public class ProjectServiceImpl implements ProjectService {
                               AuditService auditService,
                               QuotaService quotaService,
                               TenantResourceGuard tenantResourceGuard,
-                              BusinessMetrics businessMetrics) {
+                              BusinessMetrics businessMetrics,
+                              TenantFeatureService tenantFeatureService) {
         this.projectRepository = projectRepository;
         this.taskRepository = taskRepository;
         this.workflowExecutionRepository = workflowExecutionRepository;
@@ -71,6 +75,7 @@ public class ProjectServiceImpl implements ProjectService {
         this.quotaService = quotaService;
         this.tenantResourceGuard = tenantResourceGuard;
         this.businessMetrics = businessMetrics;
+        this.tenantFeatureService = tenantFeatureService;
     }
 
     @Override
@@ -180,6 +185,7 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     @Transactional
     public WorkflowExecutionResponse provisionProjectWithSaga(ProvisionProjectSagaRequest request) {
+        tenantFeatureService.requireFeature(TenantFeature.SAGA_PROVISIONING);
         String tenantId = TenantContext.getRequiredTenantId();
         String actorId = SecurityActorSupport.currentActorId();
         quotaService.checkProjectQuota(tenantId);

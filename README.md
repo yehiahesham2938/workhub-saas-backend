@@ -85,11 +85,24 @@ All protected requests: `Authorization: Bearer <token>`. Optional: `X-Correlatio
 | Observability | Correlation ID, Micrometer metrics, structured business logs |
 | Admin ops | Quotas, summary, DLQ inspect, job retry |
 
+### Docker (optional Bonus 5)
+
+```bash
+docker compose up --build
+```
+
+Stack: PostgreSQL, RabbitMQ (UI http://localhost:15672), API http://localhost:8080.
+
+### Tenant config & feature flags (Bonus 7)
+
+- `GET /api/v1/tenant/config` — cached plan and enabled features
+
 Documentation:
-- [docs/PHASE3-PROOF.md](docs/PHASE3-PROOF.md) — marker verification guide
+- [docs/PHASE3-GUIDE.md](docs/PHASE3-GUIDE.md) — **full submission guide**
+- [docs/PHASE3-PROOF.md](docs/PHASE3-PROOF.md) — marker verification
+- [docs/BONUS-FEATURES.md](docs/BONUS-FEATURES.md) — optional extras
 - [docs/OBSERVABILITY.md](docs/OBSERVABILITY.md) — tracing and metrics
 - [docs/VERIFICATION-CHECKLIST.md](docs/VERIFICATION-CHECKLIST.md) — pre-submission checklist
-- [docs/PHASE3-SCOPE.md](docs/PHASE3-SCOPE.md) — scope and acceptance criteria
 
 Postman: [postman/Workhub-Phase3.postman_collection.json](postman/Workhub-Phase3.postman_collection.json)
 

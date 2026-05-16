@@ -45,6 +45,7 @@ import com.workhub.saasbackend.repository.WorkflowExecutionRepository;
 import com.workhub.saasbackend.repository.WorkspaceRepository;
 import com.workhub.saasbackend.security.TenantContext;
 import com.workhub.saasbackend.security.TenantResourceGuard;
+import com.workhub.saasbackend.feature.TenantFeatureService;
 import com.workhub.saasbackend.observability.BusinessMetrics;
 import com.workhub.saasbackend.service.AuditService;
 import com.workhub.saasbackend.service.QuotaService;
@@ -84,6 +85,9 @@ class TenantIsolationServicePolicyTest {
 
     @Mock
     private BusinessMetrics businessMetrics;
+
+    @Mock
+    private TenantFeatureService tenantFeatureService;
 
     @InjectMocks
     private ProjectServiceImpl projectService;

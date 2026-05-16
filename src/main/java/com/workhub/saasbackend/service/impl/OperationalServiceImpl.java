@@ -6,9 +6,11 @@ import java.util.Map;
 import java.util.Properties;
 
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.workhub.saasbackend.config.CacheConfig;
 import com.workhub.saasbackend.config.QuotaProperties;
 import com.workhub.saasbackend.config.QuotaProperties.PlanLimits;
 import com.workhub.saasbackend.config.RabbitMQConfig;
@@ -81,6 +83,8 @@ public class OperationalServiceImpl implements OperationalService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = CacheConfig.TENANT_DASHBOARD_CACHE,
+            key = "T(com.workhub.saasbackend.security.TenantContext).getRequiredTenantId()")
     public TenantSummaryResponse getTenantSummary() {
         String tenantId = TenantContext.getRequiredTenantId();
         TenantPlan plan = tenantPlanResolver.resolvePlan(tenantId);

@@ -4,6 +4,8 @@ import java.util.Collection;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.workhub.saasbackend.entity.Job;
@@ -20,5 +22,7 @@ public interface JobRepository extends JpaRepository<Job, UUID> {
 	long countByTenantId(String tenantId);
 
 	long countByTenantIdAndStatus(String tenantId, JobStatus status);
+
+	Page<Job> findAllByTenantIdOrderByCreatedAtDesc(String tenantId, Pageable pageable);
 }
 

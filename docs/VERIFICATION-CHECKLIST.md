@@ -50,6 +50,23 @@ Run before submission. Record pass/fail and attach evidence where noted.
 - [ ] Postman collection includes new admin routes
 - [ ] `docs/PHASE3-PROOF.md` steps reproduce locally
 
+## Bonus features (optional)
+
+- [ ] `X-Trace-Id` returned on HTTP responses
+- [ ] `GET /api/v1/tenant/config` shows plan + features (cached)
+- [ ] `GET /admin/exports/audit` works on STARTER (tenant-a)
+- [ ] `POST /admin/queues/dead-letter/replay` forbidden on STARTER, OK on PRO (tenant-b)
+- [ ] `docker compose up --build` starts stack
+- [ ] CI workflow passes on GitHub (if used)
+
+## Final submission (Google Classroom)
+
+- [ ] Phase 3 guide matches implementation (`docs/PHASE3-GUIDE.md`)
+- [ ] Guide assumes phase 2 baseline only (no missing scaffold)
+- [ ] Core features implemented, tested, documented
+- [ ] Bonus features clearly marked optional (`docs/BONUS-FEATURES.md`)
+- [ ] Final deliverables attached; **final version** of every file submitted
+
 ## Submission package
 
 - [ ] Branch `phase-3-enterprise` committed

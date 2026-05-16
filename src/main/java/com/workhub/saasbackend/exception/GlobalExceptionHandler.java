@@ -60,6 +60,12 @@ public class GlobalExceptionHandler {
         return buildError(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage(), request.getRequestURI());
     }
 
+    @ExceptionHandler(FeatureNotEnabledException.class)
+    public ResponseEntity<ApiError> handleFeatureNotEnabled(FeatureNotEnabledException ex,
+                                                            HttpServletRequest request) {
+        return buildError(HttpStatus.FORBIDDEN, ex.getMessage(), request.getRequestURI());
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiError> handleBadRequest(IllegalArgumentException ex,
                                                      HttpServletRequest request) {

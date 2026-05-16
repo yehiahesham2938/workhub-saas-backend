@@ -2,7 +2,12 @@
 
 ## Request tracing
 
-Every HTTP response includes `X-Correlation-Id`. Send your own value to trace a request through logs:
+Every HTTP response includes:
+
+- `X-Correlation-Id` — request correlation (phase 2)
+- `X-Trace-Id` / `X-Span-Id` / `traceparent` — distributed trace (Bonus 1)
+
+Send your own values to trace a request through logs and async jobs:
 
 ```http
 GET /projects/{id}

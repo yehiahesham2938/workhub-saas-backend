@@ -15,6 +15,8 @@ import com.workhub.saasbackend.entity.Job;
 import com.workhub.saasbackend.entity.JobStatus;
 import com.workhub.saasbackend.observability.BusinessLogger;
 import com.workhub.saasbackend.observability.BusinessMetrics;
+import com.workhub.saasbackend.observability.TraceContext;
+import com.workhub.saasbackend.observability.TracePropagation;
 import com.workhub.saasbackend.repository.JobRepository;
 import com.workhub.saasbackend.service.AuditService;
 
@@ -43,6 +45,7 @@ public class JobConsumer {
 
 		MDC.put("jobId", String.valueOf(message.getJobId()));
 		MDC.put("tenantId", message.getTenantId());
+		TracePropagation.restoreFromMessage(message);
 		try {
 			Job job = jobRepository.findByIdAndTenantId(message.getJobId(), message.getTenantId()).orElse(null);
 			if (job == null) {
@@ -90,6 +93,7 @@ public class JobConsumer {
 		} finally {
 			MDC.remove("jobId");
 			MDC.remove("tenantId");
+			TraceContext.clear();
 		}
 	}
 

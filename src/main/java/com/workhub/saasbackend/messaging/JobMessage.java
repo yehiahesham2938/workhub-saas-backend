@@ -9,6 +9,8 @@ public class JobMessage implements Serializable {
 
     private UUID jobId;
     private String tenantId;
+    private String traceId;
+    private String spanId;
 
     public JobMessage() {
     }
@@ -34,8 +36,25 @@ public class JobMessage implements Serializable {
         this.tenantId = tenantId;
     }
 
+    public String getTraceId() {
+        return traceId;
+    }
+
+    public void setTraceId(String traceId) {
+        this.traceId = traceId;
+    }
+
+    public String getSpanId() {
+        return spanId;
+    }
+
+    public void setSpanId(String spanId) {
+        this.spanId = spanId;
+    }
+
     @Override
     public String toString() {
-        return "JobMessage{jobId=" + jobId + ", tenantId='" + tenantId + "'}";
+        return "JobMessage{jobId=" + jobId + ", tenantId='" + tenantId
+                + "', traceId='" + traceId + "', spanId='" + spanId + "'}";
     }
 }

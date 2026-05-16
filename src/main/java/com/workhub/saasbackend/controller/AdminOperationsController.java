@@ -8,13 +8,16 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.workhub.saasbackend.dto.response.DeadLetterQueueResponse;
+import com.workhub.saasbackend.dto.response.DeadLetterReplayResponse;
 import com.workhub.saasbackend.dto.response.JobResponse;
 import com.workhub.saasbackend.dto.response.QuotaUsageResponse;
 import com.workhub.saasbackend.dto.response.TenantSummaryResponse;
+import com.workhub.saasbackend.service.DeadLetterReplayService;
 import com.workhub.saasbackend.service.JobService;
 import com.workhub.saasbackend.service.OperationalService;
 
@@ -28,10 +31,14 @@ public class AdminOperationsController {
 
     private final OperationalService operationalService;
     private final JobService jobService;
+    private final DeadLetterReplayService deadLetterReplayService;
 
-    public AdminOperationsController(OperationalService operationalService, JobService jobService) {
+    public AdminOperationsController(OperationalService operationalService,
+                                     JobService jobService,
+                                     DeadLetterReplayService deadLetterReplayService) {
         this.operationalService = operationalService;
         this.jobService = jobService;
+        this.deadLetterReplayService = deadLetterReplayService;
     }
 
     /** Current tenant plan limits vs usage (workspaces, projects, open jobs). */
@@ -61,5 +68,17 @@ public class AdminOperationsController {
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public JobResponse retryJob(@PathVariable UUID id) {
         return jobService.retryJob(id);
+    }
+
+    /**
+     * Bonus 3: replay up to {@code limit} DLQ messages for the current tenant only.
+     * Skips terminal jobs; audited as admin action.
+     */
+    @PostMapping("/queues/dead-letter/replay")
+    @ResponseStatus(HttpStatus.OK)
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    public DeadLetterReplayResponse replayDeadLetterQueue(
+            @RequestParam(defaultValue = "10") int limit) {
+        return deadLetterReplayService.replayForCurrentTenant(limit);
     }
 }

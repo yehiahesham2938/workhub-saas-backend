@@ -8,6 +8,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
 
 import com.workhub.saasbackend.config.RabbitMQConfig;
+import com.workhub.saasbackend.observability.TracePropagation;
 
 @Component
 public class JobProducer {
@@ -24,8 +25,10 @@ public class JobProducer {
 
 	public boolean send(JobMessage message) {
 		try {
+			TracePropagation.enrich(message);
 			rabbitTemplate.convertAndSend(jobsExchange.getName(), RabbitMQConfig.JOBS_ROUTING_KEY, message);
-			log.info("published job message jobId={} tenantId={}", message.getJobId(), message.getTenantId());
+			log.info("published job message jobId={} tenantId={} traceId={}",
+					message.getJobId(), message.getTenantId(), message.getTraceId());
 			return true;
 		} catch (AmqpException ex) {
 			log.warn("failed to publish job to RabbitMQ; job stays PENDING for retry jobId={} tenantId={}",

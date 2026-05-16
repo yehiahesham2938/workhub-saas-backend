@@ -40,7 +40,7 @@ logging:
     org.hibernate.SQL: info
     com.workhub.business: info
   pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] cid=%X{correlationId:-} tenant=%X{tenantId:-} job=%X{jobId:-} %logger{36} - %msg%n"
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] trace=%X{traceId:-} span=%X{spanId:-} cid=%X{correlationId:-} tenant=%X{tenantId:-} job=%X{jobId:-} %logger{36} - %msg%n"
 
 jwt:
   secret: ${JWT_SECRET:VGhpcy1pcy1ub3QtMy1yZWFsbHktYS0yNTYtYml0LXNlY3JldC1zdHJpbmchISE=}
